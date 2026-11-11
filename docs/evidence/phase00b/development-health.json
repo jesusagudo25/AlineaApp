@@ -1,0 +1,23 @@
+{
+  "mode": "Vite development, proxy to existing local Nginx/API",
+  "result": "PASS",
+  "retry": "PASS",
+  "responses": [
+    {
+      "path": "/health",
+      "status": 200
+    },
+    {
+      "path": "/health/ready",
+      "status": 200
+    },
+    {
+      "path": "/health",
+      "status": 200
+    },
+    {
+      "path": "/health/ready",
+      "status": 200
+    }
+  ]
+}

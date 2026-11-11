@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { InitializationPage } from './features/initialization/InitializationPage';
+import { DesignPreview } from './features/design-preview/DesignPreview';
 import './styles.css';
 
-createRoot(document.getElementById('root')!).render(<StrictMode><InitializationPage /></StrictMode>);
+createRoot(document.getElementById('root')!).render(<StrictMode><DesignPreview /></StrictMode>);

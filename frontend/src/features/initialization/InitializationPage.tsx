@@ -26,20 +26,10 @@ export function InitializationPage() {
   }, [attempt]);
 
   return (
-    <div className="shell">
-      <header><a className="wordmark" href="/" aria-label="AlineaApp, inicio"><span className="brand-mark" aria-hidden="true">a</span>AlineaApp</a><span className="environment">Entorno local</span></header>
-      <main>
-        <p className="eyebrow">FASE 00 / FUNDACIONES</p>
-        <h1>Un punto de partida<br />para tener claridad.</h1>
-        <p className="intro">Estamos preparando la base de AlineaApp, tu futuro espacio para organizar tus finanzas personales.</p>
-        <section className={`service-state ${state}`} aria-labelledby="state-title" aria-busy={state === 'loading'}>
+        <section className={`technical-status ${state}`} aria-labelledby="state-title" aria-busy={state === 'loading'}>
           <div className="state-heading"><span className="status-dot" aria-hidden="true" /><p>Estado de la plataforma</p></div>
           <div role="status" aria-live="polite" aria-atomic="true"><h2 id="state-title">{copy[state].title}</h2><p>{copy[state].detail}</p></div>
           <button type="button" disabled={state === 'loading'} onClick={() => setAttempt(value => value + 1)}>{state === 'loading' ? 'Comprobando…' : 'Volver a comprobar'}<span aria-hidden="true">↗</span></button>
         </section>
-        <section className="scope" aria-labelledby="scope-title"><h2 id="scope-title">Lo que estamos construyendo</h2><dl><div><dt>Ahora</dt><dd>Plataforma local y conexión con la base de datos.</dd></div><div><dt>Después</dt><dd>Registro restringido y acceso seguro por SMS.</dd></div></dl><p className="scope-note">El acceso de usuarios y las funciones financieras aún no están habilitados.</p></section>
-      </main>
-      <footer><span>AlineaApp · Base técnica</span><span>Español · America/Panama</span></footer>
-    </div>
   );
 }
