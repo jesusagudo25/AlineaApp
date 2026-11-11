@@ -1,0 +1,8 @@
+﻿
+
+Algorithm : SHA256
+Hash      : 8EB7E704F82EF8009A8B0020F8A592931B2124BB2D13FFAFB330BC109BB492AC
+Path      : D:\ActiveDirectory\Projects\AlineaApp\backups\phase00.dump
+
+
+

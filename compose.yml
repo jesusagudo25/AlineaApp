@@ -1,0 +1,83 @@
+name: alinea-local
+services:
+  postgres:
+    image: postgres:18@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alinea}
+      POSTGRES_USER: ${POSTGRES_USER:-alinea}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 10s
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Production
+      Database__ConnectionString: 'Host=postgres;Database=${POSTGRES_DB:-alinea};Username=${POSTGRES_USER:-alinea};Password=${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env};Timeout=3;Command Timeout=5'
+      Database__ApplyMigrationsOnStartup: 'true'
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [data, web]
+    healthcheck:
+      test: [CMD, dotnet, Alinea.Api.dll, --probe]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/frontend.Dockerfile
+    ports:
+      - '127.0.0.1:${WEB_PORT:-8080}:8080'
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [web]
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+  postgres-test:
+    image: postgres:18@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42
+    profiles: [tests]
+    environment:
+      POSTGRES_DB: alinea_tests
+      POSTGRES_USER: alinea_tests
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
+    tmpfs: [/var/lib/postgresql]
+    networks: [tests]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  backend-tests:
+    profiles: [tests]
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: tests
+    environment:
+      ALINEA_TEST_CONNECTION: 'Host=postgres-test;Database=alinea_tests;Username=alinea_tests;Password=${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env};Timeout=3'
+    networks: [tests]
+    depends_on:
+      postgres-test: { condition: service_healthy }
+networks:
+  data: { internal: true }
+  web: {}
+  tests: { internal: true }
+volumes:
+  postgres_data:

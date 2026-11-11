@@ -1,0 +1,8 @@
+services:
+  postgres:
+    ports: ['127.0.0.1:5432:5432']
+    networks: [data, dev]
+  api:
+    ports: ['127.0.0.1:5080:8080']
+networks:
+  dev: {}
