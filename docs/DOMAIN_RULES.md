@@ -10,4 +10,6 @@
 - Eventos en UTC (`DateTimeOffset`); fechas calendario explícitas (`DateOnly`). Interpretación del negocio en `America/Panama`.
 - Saldos deterministas son autoridad contable. IA futura recomienda.
 
-Fase 01 agrega exclusivamente autenticación por teléfono. Revocar un teléfono bloquea también la cuenta existente, sesiones y verificaciones pendientes; volver a permitirlo no rehabilita la cuenta automáticamente. La identidad se valida en servidor incluso con registro público. Estas reglas no autorizan implementar módulos financieros.
+Fase 01 agrega autenticación por teléfono. Revocar un teléfono bloquea también la cuenta existente, sesiones y verificaciones pendientes; volver a permitirlo no rehabilita la cuenta automáticamente. La identidad se valida en servidor incluso con registro público.
+
+Fase 02B autoriza exclusivamente bancos, cuentas y categorías por usuario. Sin borrado físico por API; banco con cuentas activas no se desactiva. USD, decimal/numeric(18,2), saldo actual igual al inicial mientras no haya movimientos. Cambiar apertura requiere confirmación explícita y OpeningLockedAt vacío. La futura implementación de movimientos deberá establecer ese bloqueo atómicamente antes de registrar el primero; no hay operaciones de movimientos en este incremento.

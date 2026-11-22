@@ -1,0 +1,26 @@
+/* Adaptación funcional de controles existentes; no define identidad visual. */
+.catalog { margin-top: 24px; min-width: 0; }
+.catalog-nav { display: flex; gap: 6px; position: sticky; top: 0; z-index: 1; background: var(--surface); padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+.catalog-nav button { flex: 1; min-height: 44px; border: 1px solid var(--control-border); background: var(--surface); border-radius: 6px; padding: 8px; font-size: 14px; }
+.catalog-nav button[aria-current] { font-weight: 700; background: var(--mint); }
+.catalog-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin: 24px 0; }
+.catalog-form { max-width: 560px; background: var(--surface); border: 1px solid var(--line); padding: 20px; border-radius: 10px; margin-block: 20px; }
+.catalog-form h2 { font-size: 20px; margin-bottom: 20px; }
+.catalog-form label:not(.catalog-check) { margin-top: 16px; }
+.catalog-form select { width: 100%; min-height: 48px; border: 1px solid var(--control-border); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 10px; font-size: 16px; }
+.catalog-check { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-block: 12px; line-height: 1.6; }
+.catalog-check input { width: 20px; height: 20px; flex-shrink: 0; }
+.catalog-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.catalog-actions .primary-button { width: auto; margin: 0; min-width: 120px; }
+.catalog-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.catalog-list { list-style: none; padding: 0; margin-block: 16px; }
+.catalog-list li { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--control-border); }
+.catalog-list li > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.catalog-list h2 { font-size: 18px; }
+.catalog-list p { line-height: 1.6; font-size: 14px; }
+.catalog-list dl { display: flex; flex-wrap: wrap; gap: 16px 28px; font-size: 14px; }
+.catalog-list dt { color: var(--muted); }
+.catalog-list dd { margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+.session-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.session-header h2 { font-size: 20px; }
+@media (min-width: 1000px) { .catalog { display: grid; grid-template-columns: 200px minmax(0, 1fr); column-gap: 32px; } .catalog-nav { grid-column: 1; grid-row: 1 / span 20; align-self: start; flex-direction: column; } .catalog > :not(.catalog-nav) { grid-column: 2; } }

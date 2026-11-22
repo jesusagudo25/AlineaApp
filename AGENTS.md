@@ -2,7 +2,7 @@
 
 Lee el contrato de la fase activa en `docs/contracts/` y las decisiones antes de modificar. Inspecciona entorno y cambios existentes; aplica el mínimo cambio correcto. No hacer commits, pushes, despliegues ni cambios en Cloudflare o Raspberry Pi sin autorización explícita.
 
-- Fase actual autorizada: 01, contrato `docs/contracts/FASE-01-AUTENTICACION-OTP.md`. Autenticación OTP y SMS local de pruebas; sin SMS real, finanzas, IA ni notificaciones. Fase 00B cerrada como prototipo técnico con dirección visual rechazada; conservar evidencias, sin rediseño ni identidad definitiva.
+- Fase actual autorizada: 02B, contrato `docs/contracts/FASE 02B — Bancos, cuentas y categorías.md`. Solo bancos, cuentas y categorías; conservar autenticación OTP y Brevo bloqueado para SMS reales. Sin movimientos, tarjetas, compromisos, IA ni notificaciones. Fase 00B cerrada como prototipo técnico con dirección visual rechazada; conservar evidencias, sin rediseño ni identidad definitiva. No avanzar automáticamente a 02C.
 - No credenciales ni datos personales en código, tests, documentación nueva o logs. El contrato original es una entrada del usuario; no propagar su teléfono.
 - Solo las escrituras anónimas del flujo OTP/registro autorizadas por Fase 01, protegidas con CSRF y límites. Sin administración pública. `ACCESO_PROTEGIDO` limita registro; la autenticación es obligatoria. Revocar teléfono bloquea también cuentas existentes y sesiones; readmitir no rehabilita cuentas automáticamente.
 - TypeScript estricto; dependencias justificadas; UI en español sin balances inventados ni decoración de dashboard genérico.

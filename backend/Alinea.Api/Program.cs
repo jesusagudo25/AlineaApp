@@ -1,4 +1,5 @@
 using Alinea.Api.Features.Auth;
+using Alinea.Api.Features.Finance;
 using Alinea.Api.Features.Health;
 using Alinea.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -89,6 +90,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "AlineaApp" }));
 app.MapAuth();
+app.MapFinancialCatalogs();
 app.MapGet("/health/ready", async (ReadinessCheck check, CancellationToken cancellationToken) =>
     await check.IsReadyAsync(cancellationToken)
         ? Results.Ok(new { status = "ready" })

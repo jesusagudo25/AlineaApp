@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Icon } from '../design-preview/Icon';
 import { authApi, AuthError, isRecord } from './api';
+import { CatalogApp } from '../finance/CatalogApp';
 
 type Profile = { id: string; phone: string; name: string | null; email: string | null };
 function profile(value: unknown): Profile {
@@ -86,6 +87,12 @@ export function AuthApp() {
   }
   function reset() { setStage('phone'); setCode(''); proof.current = ''; setError(''); setNotice(''); }
 
+  if (stage === 'session' && user) return <main>
+    <header className="session-header"><div><span className="section-kicker">ALINEAAPP</span><h2>Tu perfil</h2><p>{user.name || 'Sesión iniciada'} · <span>{user.phone}</span></p></div>
+      <button className="secondary-button" disabled={busy} onClick={() => void act(async () => { await authApi('/logout', {}); setUser(null); reset(); })}>Cerrar sesión</button></header>
+    {error && <p className="field-error" role="alert">{error}</p>}
+    <CatalogApp onSessionExpired={() => { setUser(null); reset(); setError('Tu sesión ha vencido. Inicia sesión de nuevo.'); }} />
+  </main>;
   return <main>
     <section className="access-layout" aria-labelledby="auth-title">
       <div className="access-context">
@@ -104,10 +111,7 @@ export function AuthApp() {
         {stage !== 'loading' && stage !== 'session' && <p className="form-intro">{stage === 'phone' ? 'Verifica tu teléfono con un código de un solo uso.' : stage === 'code' ? 'Introduce el código para continuar.' : 'Tu teléfono está verificado. Completa los datos opcionales.'}</p>}
         {error && <p className="field-error" role="alert">{error}</p>}
         {notice && <p role="status">{notice}</p>}
-        {stage === 'session' && user ? <>
-          <p>{user.name || 'Sesión iniciada'}</p><p>{user.phone}</p>{user.email && <p>{user.email}</p>}
-          <button className="primary-button" disabled={busy} onClick={() => void act(async () => { await authApi('/logout', {}); setUser(null); reset(); })}>Cerrar sesión</button>
-        </> : stage !== 'loading' && <form onSubmit={event => void submit(event)}>
+        {stage !== 'loading' && <form onSubmit={event => void submit(event)}>
           {stage === 'phone' && <>
             <label htmlFor="phone">Número de teléfono</label>
             <div className="phone-field"><input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+507 · Tu número" maxLength={40} required value={phone} onChange={event => setPhone(event.target.value)} aria-describedby="phone-hint" disabled={busy} /></div>

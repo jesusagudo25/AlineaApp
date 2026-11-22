@@ -1,5 +1,6 @@
 using Alinea.Api.Features.Configuration;
 using Alinea.Api.Features.Auth;
+using Alinea.Api.Features.Finance;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,9 @@ namespace Alinea.Api.Infrastructure;
 public sealed class AlineaDbContext(DbContextOptions<AlineaDbContext> options) : IdentityDbContext<AppUser>(options)
 {
     public DbSet<AllowedPhone> AllowedPhones => Set<AllowedPhone>();
+    public DbSet<Bank> Banks => Set<Bank>();
+    public DbSet<FinancialAccount> Accounts => Set<FinancialAccount>();
+    public DbSet<Category> Categories => Set<Category>();
     public DbSet<OtpChallenge> OtpChallenges => Set<OtpChallenge>();
     public DbSet<AuthSession> AuthSessions => Set<AuthSession>();
     public DbSet<AuthRateBucket> AuthRateBuckets => Set<AuthRateBucket>();
@@ -17,6 +21,7 @@ public sealed class AlineaDbContext(DbContextOptions<AlineaDbContext> options) :
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        CatalogRules.Configure(modelBuilder);
         modelBuilder.Entity<AppUser>(user =>
         {
             user.Property(x => x.PhoneNumber).HasMaxLength(16);

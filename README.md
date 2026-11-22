@@ -1,6 +1,8 @@
-# AlineaApp · Fase 01
+# AlineaApp · Fase 02B
 
-Base local: React/TypeScript/Vite → Nginx → ASP.NET Core 10 → PostgreSQL. Registro por teléfono, OTP seguro y sesiones con Identity. SMS real deshabilitado; proveedor local de pruebas opt-in. Sin finanzas, IA ni despliegue público. [Operación y seguridad](docs/FASE-01-AUTENTICACION.md), [pruebas y pendientes](docs/FASE-01-RESULTADOS.md). La dirección visual de 00B continúa rechazada; prototipo conservado en `/prototype`.
+Incremento financiero: Bancos, Cuentas bancarias/efectivo y Categorías por usuario autenticado. [Funcionamiento, migración, pruebas y pendientes](docs/FASE-02B-RESULTADOS.md). No se implementan movimientos, tarjetas ni compromisos. La aplicación de esta migración al entorno habitual queda pendiente; la validación se realizó en PostgreSQL aislado. Brevo continúa sin envío real autorizado.
+
+Base local: React/TypeScript/Vite → Nginx → ASP.NET Core 10 → PostgreSQL. Registro por teléfono, OTP seguro y sesiones con Identity. SMS real deshabilitado; proveedor local de pruebas opt-in. Sin movimientos, tarjetas, compromisos, IA ni despliegue público. [Operación y seguridad](docs/FASE-01-AUTENTICACION.md), [pruebas y pendientes de autenticación](docs/FASE-01-RESULTADOS.md). La dirección visual de 00B continúa rechazada; prototipo conservado en `/prototype`.
 
 `AlineaApp.slnx` agrupa únicamente la API y sus tests. Para abrir el proyecto, usar esta raíz en el editor o la solución en un IDE compatible con .NET 10.
 
@@ -65,7 +67,7 @@ Vite usa `http://127.0.0.1:5173` y reenvía `/health` y `/api` a 5080; por defec
 
 ## Migraciones y verificación
 
-`Infrastructure/Migrations/` contiene `InitialConfiguration`, `Authentication` y snapshot. `CONFIG_GENERAL` tiene PK `Clave`, `Valor` obligatorio; seed idempotente inserta `ACCESO_PROTEGIDO=YES` y `MONEDA_PREDETERMINADA=USD` sin sobrescribir. Compose local habilita migración al iniciar; ejecución nativa usa `--migrate`. Respaldar antes de actualizar una base existente. No hay endpoint para editar configuración ni permitidos; usar la CLI documentada de autenticación.
+`Infrastructure/Migrations/` contiene `InitialConfiguration`, `Authentication`, `FinancialCatalogs` y snapshot. `CONFIG_GENERAL` tiene PK `Clave`, `Valor` obligatorio; seed idempotente inserta `ACCESO_PROTEGIDO=YES` y `MONEDA_PREDETERMINADA=USD` sin sobrescribir. Compose local habilita migración al iniciar; ejecución nativa usa `--migrate`. Respaldar antes de actualizar una base existente. No hay endpoint para editar configuración ni permitidos; usar la CLI documentada de autenticación.
 
 ```powershell
 docker compose --profile tests run --build --rm backend-tests
@@ -101,4 +103,4 @@ Las etiquetas ARM64 quedan separadas del stack amd64; no se publican. La ejecuci
 - UI no conecta: comprobar las dos rutas, proxy y base URL. La UI no presupone que una respuesta `/health` signifique que BD esté lista.
 - La salida de procesos puede usar UTC; el negocio usa America/Panama. No ajustar el reloj ni configuración global del host.
 
-Fase 01 implementada y verificable localmente; SMS real pendiente de proveedor, configuración y prueba autorizada. No se avanza a otros módulos. Sin commits, pushes ni despliegues públicos realizados.
+Fase 02B implementada y verificada en entorno aislado; actualización del entorno habitual pendiente de respaldo y autorización. Brevo conserva pendiente de activación real. No se avanza automáticamente a Fase 02C. Sin commits, pushes ni despliegues realizados por esta implementación.

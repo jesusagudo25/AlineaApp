@@ -40,7 +40,7 @@ public sealed class PlatformTests
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AlineaDbContext>();
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
-        Assert.Equal(2, (await db.Database.GetAppliedMigrationsAsync()).Count());
+        Assert.Equal(3, (await db.Database.GetAppliedMigrationsAsync()).Count());
         await DatabaseInitializer.InitializeAsync(db);
         await DatabaseInitializer.InitializeAsync(db);
         var values = await db.GeneralConfiguration.AsNoTracking().ToDictionaryAsync(x => x.Clave, x => x.Valor);
