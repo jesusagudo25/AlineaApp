@@ -24,15 +24,20 @@ public static class AuthSetup
             .Validate<IHostEnvironment>((o, environment) => !o.AllowInsecureLocalHttp || IsLocal(environment), "Insecure auth cookies are restricted to Development/Testing.")
             .ValidateOnStart();
         builder.Services.AddOptions<SmsOptions>().BindConfiguration("Sms")
-            .Validate(o => o.Provider is "Disabled" or "DevelopmentMailbox", "SMS provider is not configured.")
+            .Validate(o => o.Provider is "Disabled" or "DevelopmentMailbox" or "Brevo", "SMS provider is not configured.")
             .Validate<IHostEnvironment>((o, environment) => o.Provider != "DevelopmentMailbox" || (IsLocal(environment) && o.DevelopmentInboxKey.Length >= 64), "Development SMS requires local environment and a private inbox key.")
             .ValidateOnStart();
         builder.Services.AddSingleton(services => services.GetRequiredService<IOptions<AuthOptions>>().Value);
         builder.Services.AddSingleton(services => services.GetRequiredService<IOptions<SmsOptions>>().Value);
         builder.Services.AddSingleton<AuthCrypto>();
+        builder.Services.AddBrevoSms(builder.Configuration);
         builder.Services.AddSingleton<DevelopmentSmsSender>();
-        builder.Services.AddSingleton<ISmsSender>(services => services.GetRequiredService<SmsOptions>().Provider == "DevelopmentMailbox"
-            ? services.GetRequiredService<DevelopmentSmsSender>() : new DisabledSmsSender());
+        builder.Services.AddSingleton<ISmsSender>(services => services.GetRequiredService<SmsOptions>().Provider switch
+        {
+            "DevelopmentMailbox" => services.GetRequiredService<DevelopmentSmsSender>(),
+            "Brevo" => services.GetRequiredService<BrevoSmsSender>(),
+            _ => new DisabledSmsSender()
+        });
         builder.Services.AddScoped<AuthService>();
         builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
         {

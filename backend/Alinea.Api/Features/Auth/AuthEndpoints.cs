@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Alinea.Api.Features.Auth;
 
@@ -48,12 +49,13 @@ public static class AuthEndpoints
             Device(context, crypto, options);
             return Results.Ok(new { token = csrf.GetAndStoreTokens(context).RequestToken });
         });
-        auth.MapGet("/status", (SmsOptions sms) => Results.Ok(new { deliveryMode = sms.Provider == "DevelopmentMailbox" ? "local-test" : "unavailable", cooldownSeconds = 60 }));
-        auth.MapPost("/otp/request", async (OtpRequest input, HttpContext http, AuthService service, AuthCrypto crypto, AuthOptions options, SmsOptions sms, CancellationToken ct) =>
+        auth.MapGet("/status", (SmsOptions sms, IOptions<BrevoSmsOptions> brevo) => Results.Ok(new { deliveryMode = sms.Provider == "DevelopmentMailbox" ? "local-test" : sms.Provider == "Brevo" && brevo.Value.SendingEnabled ? "sms" : "unavailable", cooldownSeconds = 60 }));
+        auth.MapPost("/otp/request", async (OtpRequest input, HttpContext http, AuthService service, AuthCrypto crypto, AuthOptions options, SmsOptions sms, IOptions<BrevoSmsOptions> brevo, CancellationToken ct) =>
         {
             var phone = AuthCrypto.NormalizePhone(input.Phone);
             if (phone is null || input.Purpose is not ("register" or "login")) return Results.Problem(statusCode: 400, title: "Introduce un teléfono en formato internacional válido.");
             if (sms.Provider == "Disabled") return Results.Problem(statusCode: 503, title: "El envío SMS no está configurado.");
+            if (sms.Provider == "Brevo" && !brevo.Value.SendingEnabled) return Results.Problem(statusCode: 503, title: "El envío SMS no está habilitado.");
             var id = await service.RequestAsync(phone, input.Purpose, Device(http, crypto, options), crypto.Hash("ip", http.Connection.RemoteIpAddress?.ToString() ?? "unknown"), ct);
             return Results.Json(new { challengeId = id, expiresInSeconds = 300, retryAfterSeconds = 60, message = "Si el número es elegible, recibirás un código." }, statusCode: 202);
         });

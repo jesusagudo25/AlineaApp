@@ -100,8 +100,8 @@ public sealed class AuthService(AlineaDbContext db, UserManager<AppUser> users, 
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
                 challenge.Eligible = false;
-                Audit("sms.unavailable", phoneHash);
             }
+            if (!challenge.Eligible) Audit("sms.unavailable", phoneHash);
         }
         Audit("otp.request.accepted", phoneHash);
         await CommitAsync(transaction, ct);

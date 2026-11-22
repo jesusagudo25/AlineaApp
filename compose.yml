@@ -28,6 +28,10 @@ services:
       Auth__DataProtectionPath: /app/keys
       Sms__Provider: ${SMS_PROVIDER:-Disabled}
       Sms__DevelopmentInboxKey: ${DEV_SMS_INBOX_KEY:-}
+      Sms__Brevo__ApiKey: ${BREVO_API_KEY:-}
+      Sms__Brevo__SenderId: ${BREVO_SMS_SENDER_ID:-}
+      Sms__Brevo__SendingEnabled: ${BREVO_SMS_SENDING_ENABLED:-false}
+      Sms__Brevo__TimeoutSeconds: ${BREVO_SMS_TIMEOUT_SECONDS:-3}
       Database__ConnectionString: 'Host=postgres;Database=${POSTGRES_DB:-alinea};Username=${POSTGRES_USER:-alinea};Password=${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env};Timeout=3;Command Timeout=5'
       Database__ApplyMigrationsOnStartup: 'true'
     depends_on:

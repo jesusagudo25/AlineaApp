@@ -33,6 +33,7 @@ public sealed class AuthFactory : WebApplicationFactory<Program>
     public bool Insecure { get; init; }
     public bool FailDelivery { get; init; }
     public string? KeyDirectory { get; init; }
+    public HttpMessageHandler? BrevoTransport { get; init; }
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(EnvironmentName);
@@ -42,12 +43,16 @@ public sealed class AuthFactory : WebApplicationFactory<Program>
             ["Database:ApplyMigrationsOnStartup"] = "true", ["Auth:OtpKey"] = Key,
             ["Sms:Provider"] = Provider, ["Sms:DevelopmentInboxKey"] = InboxKey,
             ["Auth:AllowInsecureLocalHttp"] = Insecure.ToString(),
+            ["Sms:Brevo:SendingEnabled"] = (BrevoTransport is not null).ToString(),
+            ["Sms:Brevo:ApiKey"] = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
+            ["Sms:Brevo:SenderId"] = "AlineaApp",
         }));
         builder.ConfigureServices(services =>
         {
             services.AddSingleton<TimeProvider>(Clock);
             if (KeyDirectory is not null) services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(KeyDirectory));
             if (FailDelivery) services.AddSingleton<ISmsSender, UnavailableSms>();
+            if (BrevoTransport is not null) services.AddHttpClient(BrevoSmsSender.ClientName).ConfigurePrimaryHttpMessageHandler(() => BrevoTransport);
         });
     }
     public HttpClient Browser() => CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
@@ -318,6 +323,40 @@ public sealed class AuthTests
         Assert.False((await db.OtpChallenges.SingleAsync(x => x.Id == id)).Eligible);
         Assert.True(await db.AuthAudits.AnyAsync(x => x.Event == "sms.unavailable"));
         Assert.Empty(await db.AuthSessions.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(400, "{\"code\":\"not_enough_credits\"}")]
+    [InlineData(402, "{}")]
+    [InlineData(401, "{}")]
+    [InlineData(429, "{}")]
+    [InlineData(503, "{}")]
+    [InlineData(201, "{}")]
+    public async Task Brevo_failure_blocks_verification_even_with_the_correct_generated_otp(int status, string body)
+    {
+        using var transport = new RejectedBrevoTransport(status, body);
+        await using var factory = new AuthFactory { Provider = "Brevo", BrevoTransport = transport };
+        using var client = factory.Browser(); await factory.ResetAsync(); await factory.Admin("--allow-phone", Phone);
+        var id = await Request(client);
+        Assert.True(transport.SawCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Post(client, "/otp/verify", new { challengeId = id, code = transport.Code })).StatusCode);
+        using var scope = factory.Services.CreateScope(); var db = scope.ServiceProvider.GetRequiredService<AlineaDbContext>();
+        var challenge = await db.OtpChallenges.SingleAsync(x => x.Id == id);
+        Assert.False(challenge.Eligible); Assert.Null(challenge.GrantHash);
+        Assert.True(await db.AuthAudits.AnyAsync(x => x.Event == "sms.unavailable"));
+        Assert.Empty(await db.AuthSessions.ToListAsync());
+    }
+
+    private sealed class RejectedBrevoTransport(int status, string body) : HttpMessageHandler
+    {
+        public string Code { get; private set; } = "";
+        public bool SawCode => Code.Length == 6;
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var payload = JsonNode.Parse(await request.Content!.ReadAsStringAsync(ct))!;
+            Code = System.Text.RegularExpressions.Regex.Match(payload["content"]!.GetValue<string>(), @"\b[0-9]{6}\b").Value;
+            return new HttpResponseMessage((HttpStatusCode)status) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
+        }
     }
 
     [Fact]
