@@ -1,5 +1,12 @@
 const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
+export function sameOriginRequest(path: string, options: RequestInit = {}): Promise<Response> {
+  return fetch(path, {
+    ...options, credentials: 'same-origin', cache: 'no-store',
+    signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+}
+
 export class HttpError extends Error {
   constructor(public readonly status: number) { super(`HTTP ${status}`); }
 }

@@ -1,3 +1,4 @@
+using Alinea.Api.Features.Auth;
 using Alinea.Api.Features.Health;
 using Alinea.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,9 @@ if (args.Contains("--probe"))
     return;
 }
 
-var builder = WebApplication.CreateBuilder(args);
+string[] localCommands = ["--migrate", "--allow-phone", "--revoke-phone", "--disable-user", "--enable-user"];
+var builder = WebApplication.CreateBuilder(args.Where(x => !localCommands.Contains(x)).ToArray());
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 16 * 1024);
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole();
 // El middleware predeterminado también registra excepciones; nuestro handler registra solo tipo y trace.
@@ -31,6 +34,8 @@ builder.Services.AddDbContext<AlineaDbContext>((services, options) => options.Us
 builder.Services.AddScoped<ReadinessCheck>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<SafeExceptionHandler>();
+builder.AddAlineaAuth();
+builder.Services.AddScoped<AuthAdministration>();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 {
     var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -41,6 +46,8 @@ var app = builder.Build();
 // Validar antes de migrar o atender solicitudes; errores sin cadena de conexión.
 var databaseOptions = app.Services.GetRequiredService<IOptions<DatabaseOptions>>().Value;
 _ = app.Services.GetRequiredService<IOptions<CorsOptions>>().Value;
+_ = app.Services.GetRequiredService<AuthOptions>();
+_ = app.Services.GetRequiredService<SmsOptions>();
 if (databaseOptions.ApplyMigrationsOnStartup || args.Contains("--migrate"))
 {
     try
@@ -57,8 +64,19 @@ if (databaseOptions.ApplyMigrationsOnStartup || args.Contains("--migrate"))
     }
 }
 if (args.Contains("--migrate")) return;
+var adminCommand = args.SingleOrDefault(x => x is "--allow-phone" or "--revoke-phone" or "--disable-user" or "--enable-user");
+if (adminCommand is not null)
+{
+    using var scope = app.Services.CreateScope();
+    var phone = AuthCrypto.NormalizePhone(Environment.GetEnvironmentVariable("ALINEA_ADMIN_PHONE"));
+    if (phone is null) { Environment.ExitCode = 1; app.Logger.LogError("Administrative phone input is missing or invalid; input suppressed"); return; }
+    await scope.ServiceProvider.GetRequiredService<AuthAdministration>().ApplyAsync(adminCommand, phone, CancellationToken.None);
+    app.Logger.LogInformation("Authentication administrative operation completed; subject suppressed");
+    return;
+}
 
 app.UseExceptionHandler();
+if (app.Services.GetRequiredService<AuthOptions>().KnownProxies.Length > 0) app.UseForwardedHeaders();
 app.UseStatusCodePages();
 app.UseCors();
 app.Use(async (context, next) =>
@@ -67,7 +85,10 @@ app.Use(async (context, next) =>
     context.Response.Headers.XContentTypeOptions = "nosniff";
     await next(context);
 });
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "AlineaApp" }));
+app.MapAuth();
 app.MapGet("/health/ready", async (ReadinessCheck check, CancellationToken cancellationToken) =>
     await check.IsReadyAsync(cancellationToken)
         ? Results.Ok(new { status = "ready" })

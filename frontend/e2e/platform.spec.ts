@@ -5,13 +5,13 @@ test('shell conectado a plataforma conservada, responsive y sin cifras ficticias
   page.on('pageerror', error => errors.push(error.message));
   expect((await request.get('/health')).status()).toBe(200);
   expect(await (await request.get('/health/ready')).json()).toEqual({ status: 'ready' });
-  await page.goto('/');
+  await page.goto('/prototype');
   await expect(page.getByRole('heading', { name: 'Resumen', exact: true })).toBeVisible();
   await expect(page.getByLabel('Saldo no disponible')).toHaveText('$ —');
   await expect(page.getByRole('button', { name: 'Añadir cuenta', exact: true })).toBeDisabled();
   await expect(page.getByText('Estado técnico · Desarrollo')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: `../docs/evidence/phase00b/shell-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: `../docs/evidence/phase01/prototype-shell-${testInfo.project.name}.png`, fullPage: true });
   const nav = page.getByRole('navigation', { name: testInfo.project.name === 'desktop' ? 'Navegación principal' : 'Navegación móvil' });
   for (const name of ['Movimientos', 'Cuentas', 'Compromisos', 'Inicio']) {
     await nav.getByRole('button', { name, exact: true }).click();
@@ -24,20 +24,20 @@ test('shell conectado a plataforma conservada, responsive y sin cifras ficticias
 test('teléfono y OTP son solo vistas visuales, sin llamadas de autenticación ni persistencia', async ({ page }, testInfo) => {
   const writes: string[] = [];
   page.on('request', request => { if (request.method() !== 'GET') writes.push(request.url()); });
-  await page.goto('/');
+  await page.goto('/prototype');
   await page.getByRole('button', { name: 'Vista de acceso' }).click();
   await expect(page.getByText('No envía SMS ni inicia sesión.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Enviar código' })).toBeDisabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: `../docs/evidence/phase00b/access-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: `../docs/evidence/phase01/prototype-access-${testInfo.project.name}.png`, fullPage: true });
   const phone = page.getByLabel('Número de teléfono');
   await phone.fill('12'); await phone.press('Tab');
   await expect(phone).toHaveAttribute('aria-invalid', 'true');
   await expect(page.getByRole('alert')).toHaveText('Revisa el número: utiliza 8 dígitos.');
-  await page.screenshot({ path: `../docs/evidence/phase00b/phone-error-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: `../docs/evidence/phase01/prototype-phone-error-${testInfo.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Código SMS', exact: true }).click();
   await expect(page.getByText('Vista de ejemplo. No se ha enviado ningún código.')).toBeVisible();
-  await page.screenshot({ path: `../docs/evidence/phase00b/otp-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: `../docs/evidence/phase01/prototype-otp-${testInfo.project.name}.png`, fullPage: true });
   const code = page.getByLabel('Código de seis dígitos');
   await code.fill('12'); await code.press('Tab');
   await expect(code).toHaveAttribute('aria-invalid', 'true');
@@ -49,7 +49,7 @@ test('teléfono y OTP son solo vistas visuales, sin llamadas de autenticación n
 });
 
 test('teclado, foco y contraste de los controles renderizados', async ({ page }, testInfo) => {
-  await page.goto('/');
+  await page.goto('/prototype');
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Ir al contenido' })).toBeFocused();
   await page.keyboard.press('Enter');
@@ -68,7 +68,7 @@ test('teclado, foco y contraste de los controles renderizados', async ({ page },
     const navigation = await page.getByRole('navigation', { name: 'Navegación móvil' }).boundingBox();
     expect(field!.y + field!.height).toBeLessThanOrEqual(navigation!.y);
   }
-  await page.screenshot({ path: `../docs/evidence/phase00b/focus-${testInfo.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: `../docs/evidence/phase01/prototype-focus-${testInfo.project.name}.png`, fullPage: true });
   const ratios = await page.evaluate(() => {
     function rgb(color: string): number[] {
       const clean = color.trim();

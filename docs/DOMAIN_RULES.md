@@ -10,4 +10,4 @@
 - Eventos en UTC (`DateTimeOffset`); fechas calendario explícitas (`DateOnly`). Interpretación del negocio en `America/Panama`.
 - Saldos deterministas son autoridad contable. IA futura recomienda.
 
-En Fase 00 solo existe configuración global; estas reglas no autorizan implementar módulos financieros.
+Fase 01 agrega exclusivamente autenticación por teléfono. Revocar un teléfono bloquea también la cuenta existente, sesiones y verificaciones pendientes; volver a permitirlo no rehabilita la cuenta automáticamente. La identidad se valida en servidor incluso con registro público. Estas reglas no autorizan implementar módulos financieros.

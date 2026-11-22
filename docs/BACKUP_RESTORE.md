@@ -1,5 +1,7 @@
 # Backup y restauración
 
+Desde Fase 01, respaldar además el volumen privado `auth_keys` (Data Protection), OTP_KEY y configuración en un almacén seguro y cifrado, fuera del repositorio. `pg_dump` no incluye claves ni secretos externos. Sin las claves DP las cookies existentes dejan de ser legibles; las sesiones se mantienen en PostgreSQL, pero será necesario iniciar sesión de nuevo. No publicar contenido de claves o dumps. [Operación y reversión de autenticación](FASE-01-AUTENTICACION.md).
+
 Los dumps contienen información sensible cuando exista información de usuarios. Guardarlos cifrados y fuera del repositorio, restringir acceso y definir retención antes de publicación. `.gitignore` excluye `backups/`. No hay programación automática ni copia externa garantizada.
 
 Con stack local funcionando, PowerShell (dump binario, sin redirección de bytes):

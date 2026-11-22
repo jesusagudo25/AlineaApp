@@ -1,6 +1,6 @@
-# AlineaApp · Fase 00
+# AlineaApp · Fase 01
 
-Base local: React/TypeScript/Vite → Nginx → ASP.NET Core 10 → PostgreSQL. UI en español conectada a `/health` y `/health/ready`. Sin login, SMS, datos financieros, IA ni despliegue público.
+Base local: React/TypeScript/Vite → Nginx → ASP.NET Core 10 → PostgreSQL. Registro por teléfono, OTP seguro y sesiones con Identity. SMS real deshabilitado; proveedor local de pruebas opt-in. Sin finanzas, IA ni despliegue público. [Operación y seguridad](docs/FASE-01-AUTENTICACION.md), [pruebas y pendientes](docs/FASE-01-RESULTADOS.md). La dirección visual de 00B continúa rechazada; prototipo conservado en `/prototype`.
 
 `AlineaApp.slnx` agrupa únicamente la API y sus tests. Para abrir el proyecto, usar esta raíz en el editor o la solución en un IDE compatible con .NET 10.
 
@@ -12,6 +12,7 @@ Desde la raíz, PowerShell:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File infra/init-env.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File infra/init-auth-env.ps1
 docker compose config --quiet
 docker compose up -d --build --wait
 Invoke-RestMethod http://127.0.0.1:8080/health
@@ -26,7 +27,8 @@ Linux/Raspberry ARM64 **solo local, sin despliegue ni túnel**:
 
 ```sh
 cp .env.example .env
-# Editar .env: sustituir POSTGRES_PASSWORD con un secreto aleatorio local.
+# Editar .env sin imprimir valores: sustituir POSTGRES_PASSWORD y añadir OTP_KEY
+# (mínimo 32 bytes aleatorios codificados en hexadecimal). SMS_PROVIDER=Disabled.
 docker compose config --quiet
 docker compose up -d --build --wait
 curl --fail http://127.0.0.1:8080/health/ready
@@ -47,6 +49,9 @@ Get-Content .env | Where-Object { $_ -match '^[A-Z_]+=' } | ForEach-Object {
   [Environment]::SetEnvironmentVariable($taskName, $taskValue, 'Process')
 }
 $env:Database__ConnectionString = "Host=127.0.0.1;Database=$env:POSTGRES_DB;Username=$env:POSTGRES_USER;Password=$env:POSTGRES_PASSWORD;Timeout=3"
+$env:Auth__OtpKey = $env:OTP_KEY
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$env:Auth__AllowInsecureLocalHttp = 'true'
 dotnet restore backend/Alinea.Api
 dotnet run --project backend/Alinea.Api -- --migrate
 dotnet run --project backend/Alinea.Api -- --urls http://127.0.0.1:5080
@@ -56,11 +61,11 @@ npm ci
 npm run dev
 ```
 
-Vite usa `http://127.0.0.1:5173` y reenvía `/health` a 5080; por defecto no necesita CORS. `frontend/.env.example` documenta `VITE_API_BASE_URL` pública y `API_PROXY_TARGET` de desarrollo. No poner secretos en variables `VITE_*`. Para frontend separado configurar orígenes exactos con `Cors__AllowedOrigins__0`, nunca `*` ni bypass de autenticación.
+Vite usa `http://127.0.0.1:5173` y reenvía `/health` y `/api` a 5080; por defecto no necesita CORS. `frontend/.env.example` documenta `VITE_API_BASE_URL` pública para salud y `API_PROXY_TARGET` de desarrollo. Autenticación usa exclusivamente mismo origen. No poner secretos en variables `VITE_*`. No habilitar credenciales CORS ni bypass de autenticación para separar frontend.
 
 ## Migraciones y verificación
 
-`Infrastructure/Migrations/` contiene `InitialConfiguration` y snapshot. `CONFIG_GENERAL` tiene PK `Clave`, `Valor` obligatorio; seed idempotente inserta `ACCESO_PROTEGIDO=YES` y `MONEDA_PREDETERMINADA=USD` sin sobrescribir. Compose local habilita migración al iniciar; ejecución nativa usa `--migrate`. No hay endpoint para editar estos valores.
+`Infrastructure/Migrations/` contiene `InitialConfiguration`, `Authentication` y snapshot. `CONFIG_GENERAL` tiene PK `Clave`, `Valor` obligatorio; seed idempotente inserta `ACCESO_PROTEGIDO=YES` y `MONEDA_PREDETERMINADA=USD` sin sobrescribir. Compose local habilita migración al iniciar; ejecución nativa usa `--migrate`. Respaldar antes de actualizar una base existente. No hay endpoint para editar configuración ni permitidos; usar la CLI documentada de autenticación.
 
 ```powershell
 docker compose --profile tests run --build --rm backend-tests
@@ -96,4 +101,4 @@ Las etiquetas ARM64 quedan separadas del stack amd64; no se publican. La ejecuci
 - UI no conecta: comprobar las dos rutas, proxy y base URL. La UI no presupone que una respuesta `/health` signifique que BD esté lista.
 - La salida de procesos puede usar UTC; el negocio usa America/Panama. No ajustar el reloj ni configuración global del host.
 
-Próxima fase: **FASE 01 — registro restringido y autenticación OTP por SMS**, con contrato y validaciones propios. Sin commits, pushes ni despliegues realizados por esta implementación.
+Fase 01 implementada y verificable localmente; SMS real pendiente de proveedor, configuración y prueba autorizada. No se avanza a otros módulos. Sin commits, pushes ni despliegues públicos realizados.

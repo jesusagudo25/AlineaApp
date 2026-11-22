@@ -15,6 +15,7 @@ RUN dotnet publish backend/Alinea.Api/Alinea.Api.csproj -c Release --no-restore 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e AS runtime
 WORKDIR /app
 COPY --from=build /out .
+RUN mkdir /app/keys && chown $APP_UID /app/keys && chmod 700 /app/keys
 USER $APP_UID
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Alinea.Api.dll"]

@@ -1,0 +1,19 @@
+# Usar con -p alinea-auth-verify; nunca sobre alinea-local.
+services:
+  postgres:
+    volumes: !reset []
+    tmpfs: [/var/lib/postgresql]
+    restart: 'no'
+  api:
+    image: alinea-local-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+      Auth__AllowInsecureLocalHttp: 'true'
+      Sms__Provider: DevelopmentMailbox
+    volumes: !reset []
+    tmpfs: ['/app/keys:uid=1654,gid=1654,mode=0700']
+    restart: 'no'
+  frontend:
+    image: alinea-local-frontend
+    ports: !override ['127.0.0.1:8081:8080']
+    restart: 'no'

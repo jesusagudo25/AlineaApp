@@ -19,6 +19,7 @@ public sealed class ApiFactory(string connection, bool migrate) : WebApplication
         {
             ["Database:ConnectionString"] = connection,
             ["Database:ApplyMigrationsOnStartup"] = migrate.ToString(),
+            ["Auth:OtpKey"] = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)),
             ["Cors:AllowedOrigins:0"] = "http://localhost:5173"
         }));
     }
@@ -39,7 +40,7 @@ public sealed class PlatformTests
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AlineaDbContext>();
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
-        Assert.Single(await db.Database.GetAppliedMigrationsAsync());
+        Assert.Equal(2, (await db.Database.GetAppliedMigrationsAsync()).Count());
         await DatabaseInitializer.InitializeAsync(db);
         await DatabaseInitializer.InitializeAsync(db);
         var values = await db.GeneralConfiguration.AsNoTracking().ToDictionaryAsync(x => x.Clave, x => x.Valor);
