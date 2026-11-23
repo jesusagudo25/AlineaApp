@@ -9,7 +9,7 @@ const api = vi.mocked(catalogRequest);
 const account = { id: 'account', name: 'Caja', kind: 'cash', bankId: null, currency: 'USD', openingBalance: '100.00', currentBalance: '100.00', openingDate: '2026-01-01', openingLocked: false, version: 'version', isActive: true };
 const category = { id: 'category', name: 'Comida', kind: 'expense', isInitial: false, version: 'version', isActive: true };
 const empty = { items: [], total: 0, page: 1, pageSize: 10, income: '0.00', expense: '0.00' };
-beforeEach(() => { api.mockReset(); api.mockImplementation(async path => path === 'accounts' ? [account] : path === 'categories' ? [category] : empty); });
+beforeEach(() => { api.mockReset(); api.mockImplementation(async path => path === 'accounts' ? [account] : path === 'categories' ? [category] : path === 'cards' ? [] : empty); });
 describe('transacciones', () => {
   it('valida contratos e importes sin conversión float', () => {
     for (const value of ['0', '-1', '1.001', '10000000000000000', 'NaN']) expect(validAmount(value)).toBe(false);
@@ -48,5 +48,18 @@ describe('transacciones', () => {
     await screen.findByRole('alert'); expect(screen.queryByText('No hay movimientos para estos filtros.')).not.toBeInTheDocument();
     api.mockRejectedValue(new AuthError(401, 'Sesión vencida')); fireEvent.click(screen.getByRole('button', { name: 'Actualizar historial' }));
     await waitFor(() => expect(expired).toHaveBeenCalled());
+  });
+  it('retira la confirmación anterior al abrir otra operación y espera la nueva anulación', async () => {
+    const row = { id: 'movement', version: 'v1', kind: 'expense', accountId: 'account', destinationAccountId: null, categoryId: 'category', amount: '10.00', date: '2026-11-10', description: 'Ensayo', isVoided: false };
+    api.mockImplementation(async path => path === 'accounts' ? [account] : path === 'categories' ? [category] : path === 'cards' ? [] : path === 'transactions/movement' ? { transaction: row, revisions: [] } : { ...empty, total: 1, items: [row] });
+    render(<TransactionsApp onSessionExpired={vi.fn()} />); await screen.findByRole('button', { name: 'Detalle Ensayo' });
+    fireEvent.click(screen.getByRole('button', { name: 'Detalle Ensayo' })); await screen.findByLabelText('Motivo de anulación');
+    fireEvent.change(screen.getByLabelText('Motivo de anulación'), { target: { value: 'Primera corrección' } }); fireEvent.click(screen.getByRole('button', { name: 'Confirmar anulación' }));
+    await screen.findByText('Movimiento anulado. Su trazabilidad se conserva.');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Detalle Ensayo' })).toBeEnabled()); fireEvent.click(screen.getByRole('button', { name: 'Detalle Ensayo' }));
+    await screen.findByLabelText('Motivo de anulación'); expect(screen.queryByText('Movimiento anulado. Su trazabilidad se conserva.')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Motivo de anulación'), { target: { value: 'Segunda corrección' } });
+    let finish: ((v: unknown) => void) | undefined; api.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })); fireEvent.click(screen.getByRole('button', { name: 'Confirmar anulación' }));
+    expect(screen.queryByText('Movimiento anulado. Su trazabilidad se conserva.')).not.toBeInTheDocument(); finish!({}); await screen.findByText('Movimiento anulado. Su trazabilidad se conserva.');
   });
 });

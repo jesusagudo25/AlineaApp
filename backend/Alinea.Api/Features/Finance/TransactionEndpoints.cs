@@ -13,7 +13,7 @@ public static class TransactionEndpoints
     private static string Owner(HttpContext http) => http.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     private static IResult Invalid(string title = "Revisa importe, fecha, cuentas y categoría.") => Results.Problem(statusCode: 400, title: title);
     private static IResult Conflict(string title) => Results.Problem(statusCode: 409, title: title);
-    private static object View(FinancialTransaction row) => new { row.Id, row.Kind, row.AccountId, row.DestinationAccountId, row.CategoryId,
+    private static object View(FinancialTransaction row) => new { row.Id, row.Kind, row.AccountId, row.DestinationAccountId, row.CategoryId, row.CardId, row.CommitmentOccurrenceId,
         amount = CatalogRules.Money(row.Amount), currency = "USD", row.Date, row.Description, row.IsVoided, row.Version, row.CreatedAt, row.UpdatedAt };
     public static Task<decimal> Balance(AlineaDbContext db, FinancialAccount account, CancellationToken ct) =>
         db.Accounts.Where(a => a.Id == account.Id && a.UserId == account.UserId).Select(a => a.OpeningBalance
@@ -40,7 +40,7 @@ public static class TransactionEndpoints
     private static async Task<IResult> List(HttpContext http, AlineaDbContext db, CancellationToken ct,
         DateOnly? from = null, DateOnly? to = null, Guid? accountId = null, string? kind = null, Guid? categoryId = null, int page = 1, int pageSize = 20)
     {
-        if (page < 1 || page > 1000000 || pageSize is < 1 or > 100 || from > to || kind is not (null or "income" or "expense" or "transfer")) return Invalid("Filtros o paginación no válidos.");
+        if (page < 1 || page > 1000000 || pageSize is < 1 or > 100 || from > to || kind is not (null or "income" or "expense" or "transfer" or "card_payment")) return Invalid("Filtros o paginación no válidos.");
         var query = db.Transactions.AsNoTracking().Where(x => x.UserId == Owner(http));
         if (from is not null) query = query.Where(x => x.Date >= from);
         if (to is not null) query = query.Where(x => x.Date <= to);
@@ -53,8 +53,8 @@ public static class TransactionEndpoints
         var rows = await query.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
         return Results.Ok(new { items = rows.Select(View), total = count, page, pageSize, income = CatalogRules.Money(income), expense = CatalogRules.Money(expense) });
     }
-    private static string Hash(string operation, object body) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(operation + JsonSerializer.Serialize(body, Json))));
-    private static async Task<IResult?> Replay(AlineaDbContext db, string owner, Guid key, string hash, CancellationToken ct)
+    internal static string Hash(string operation, object body) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(operation + JsonSerializer.Serialize(body, Json))));
+    internal static async Task<IResult?> Replay(AlineaDbContext db, string owner, Guid key, string hash, CancellationToken ct)
     {
         var previous = await db.FinancialRequests.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == owner && x.RequestId == key, ct);
         return previous is null ? null : previous.Hash == hash ? Results.Content(previous.Response, "application/json", statusCode: previous.Status)
@@ -70,21 +70,28 @@ public static class TransactionEndpoints
         await db.SaveChangesAsync(ct);
         return Results.Content(response, "application/json", statusCode: status);
     }
-    private static async Task<IResult> Save(Guid? id, TransactionInput input, HttpContext http, AlineaDbContext db, TimeProvider clock, CancellationToken ct)
+    internal static async Task<IResult> Save(Guid? id, TransactionInput input, HttpContext http, AlineaDbContext db, TimeProvider clock, CancellationToken ct, string? requestHash = null, Guid? occurrenceId = null)
     {
-        var owner = Owner(http); var hash = Hash("save/" + id, input);
+        var owner = Owner(http); var hash = requestHash ?? Hash("save/" + id, input);
         if (input.RequestId == Guid.Empty) return Invalid("Se requiere una clave de solicitud.");
         if (await Replay(db, owner, input.RequestId, hash, ct) is { } replay) return replay;
         var row = id is null ? null : await db.Transactions.SingleOrDefaultAsync(x => x.Id == id && x.UserId == owner, ct);
         if (id is not null && row is null) return Results.NotFound();
         if (row is not null && (row.IsVoided || input.Version != row.Version)) return Conflict("El movimiento cambió o está anulado. Actualiza el historial.");
+        if (row?.CardId is not null || row?.CommitmentOccurrenceId is not null) return Conflict("Corrige este movimiento mediante anulación y nuevo registro o confirmación.");
         var reason = CatalogRules.Name(input.Reason);
         if (id is not null && reason is null) return Invalid("Indica un motivo de edición (hasta 100 caracteres).");
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(clock.GetUtcNow(), TimeZoneInfo.FindSystemTimeZoneById("America/Panama")).DateTime);
-        if (input.Kind is not ("income" or "expense" or "transfer") || input.Amount <= 0 || input.Amount > CatalogRules.MaxMoney || decimal.Round(input.Amount, 2) != input.Amount
+        if (input.Kind is not ("income" or "expense" or "transfer" or "card_payment") || input.Amount <= 0 || input.Amount > CatalogRules.MaxMoney || decimal.Round(input.Amount, 2) != input.Amount
             || input.Date == default || input.Date > today || input.Description?.Length > 500 || input.Description?.Any(char.IsControl) == true) return Invalid();
-        var account = await db.Accounts.SingleOrDefaultAsync(x => x.Id == input.AccountId && x.UserId == owner && x.IsActive, ct);
-        if (account is null || input.Date < account.OpeningDate) return Invalid("Selecciona una cuenta propia activa y una fecha desde su apertura.");
+        var card = input.CardId is null ? null : await db.Cards.SingleOrDefaultAsync(x => x.Id == input.CardId && x.UserId == owner && x.IsActive, ct);
+        if (input.CardId is not null && (card is null || input.Date < card.OpeningDate)) return Invalid("Selecciona una tarjeta propia activa y respeta su apertura.");
+        if (card is not null && (input.Kind is not ("expense" or "card_payment") || (card.Kind == "debit" && (input.Kind != "expense" || input.AccountId != card.AccountId))
+            || (card.Kind == "credit" && input.Kind == "expense" && input.AccountId is not null))) return Invalid();
+        if (input.Kind == "card_payment" && card?.Kind != "credit") return Invalid();
+        var account = input.AccountId is null ? null : await db.Accounts.SingleOrDefaultAsync(x => x.Id == input.AccountId && x.UserId == owner && x.IsActive, ct);
+        if (account is null && !(card?.Kind == "credit" && input.Kind == "expense" && input.AccountId is null)
+            || account is not null && input.Date < account.OpeningDate) return Invalid("Selecciona una cuenta propia activa y una fecha desde su apertura.");
         FinancialAccount? destination = null;
         if (input.Kind == "transfer")
         {
@@ -92,6 +99,8 @@ public static class TransactionEndpoints
             destination = await db.Accounts.SingleOrDefaultAsync(x => x.Id == input.DestinationAccountId && x.UserId == owner && x.IsActive, ct);
             if (destination is null || input.Date < destination.OpeningDate) return Invalid("Selecciona otra cuenta propia activa y respeta su apertura.");
         }
+        else if (input.Kind == "card_payment")
+        { if (input.CategoryId is not null || input.DestinationAccountId is not null) return Invalid(); }
         else if (input.DestinationAccountId is not null || !await db.Categories.AnyAsync(x => x.Id == input.CategoryId && x.UserId == owner && x.IsActive && x.Kind == input.Kind, ct)) return Invalid("Selecciona una categoría propia activa del mismo tipo.");
         if (input.CategoryId is not null)
         {
@@ -103,6 +112,8 @@ public static class TransactionEndpoints
         foreach (var used in new[] { account, destination }.OfType<FinancialAccount>())
         { used.OpeningLockedAt ??= clock.GetUtcNow(); used.Version = Guid.NewGuid(); used.UpdatedAt = clock.GetUtcNow(); }
         row.Kind = input.Kind!; row.AccountId = input.AccountId; row.DestinationAccountId = input.DestinationAccountId; row.CategoryId = input.CategoryId;
+        row.CardId = input.CardId; row.CommitmentOccurrenceId = occurrenceId;
+        if (card is not null) { card.Used = true; card.Version = Guid.NewGuid(); card.UpdatedAt = clock.GetUtcNow(); }
         row.Amount = input.Amount; row.Date = input.Date; row.Description = input.Description?.Trim() ?? "";
         return await Record(db, row, input.RequestId, hash, id is null ? "create" : "edit", reason ?? "Registro inicial", clock, ct);
     }

@@ -1,0 +1,19 @@
+npx.cmd : npm notice run alinea-frontend@0.0.0 npx
+At line:2 char:1
++ npx.cmd playwright test --config playwright.planning.config.ts *> ../ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run alinea-frontend@0.0.0 npx:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run playwright test --config playwright.planning.config.ts
+
+Running 2 tests using 2 workers
+
+(node:27240) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:25708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [desktop] › e2e\planning.spec.ts:7:1 › tarjetas y compromisos reales sin duplicar gastos ni anticipar ingresos (17.9s)
+  ok 1 [mobile] › e2e\planning.spec.ts:7:1 › tarjetas y compromisos reales sin duplicar gastos ni anticipar ingresos (18.5s)
+
+  2 passed (19.9s)

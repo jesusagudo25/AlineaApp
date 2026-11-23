@@ -64,6 +64,9 @@ public sealed class AuthFactory : WebApplicationFactory<Program>
         await db.FinancialRequests.ExecuteDeleteAsync();
         await db.TransactionRevisions.ExecuteDeleteAsync();
         await db.Transactions.ExecuteDeleteAsync();
+        await db.CommitmentOccurrences.ExecuteDeleteAsync();
+        await db.Commitments.ExecuteDeleteAsync();
+        await db.Cards.ExecuteDeleteAsync();
         await db.Accounts.ExecuteDeleteAsync(); await db.Categories.ExecuteDeleteAsync(); await db.Banks.ExecuteDeleteAsync();
         await db.AuthSessions.ExecuteDeleteAsync(); await db.Users.ExecuteDeleteAsync();
         await db.OtpChallenges.ExecuteDeleteAsync(); await db.AuthRateBuckets.ExecuteDeleteAsync();

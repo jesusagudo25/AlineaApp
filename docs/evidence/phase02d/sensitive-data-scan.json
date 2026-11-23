@@ -1,0 +1,8 @@
+{
+  "scannedFiles": 50,
+  "scope": "Changed files and phase02d evidence, UTF-16 aware; heuristic only. Synthetic +999 fixtures excluded.",
+  "reviewedUnchangedAuthNormalizationFixtures": 2,
+  "findings": [],
+  "reportLinks": 19,
+  "missingLinks": []
+}

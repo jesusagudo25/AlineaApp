@@ -8,7 +8,9 @@ public sealed class FinancialTransaction
     public Guid Id { get; set; } = Guid.NewGuid();
     public required string UserId { get; set; }
     public required string Kind { get; set; }
-    public Guid AccountId { get; set; }
+    public Guid? AccountId { get; set; }
+    public Guid? CardId { get; set; }
+    public Guid? CommitmentOccurrenceId { get; set; }
     public Guid? DestinationAccountId { get; set; }
     public Guid? CategoryId { get; set; }
     public decimal Amount { get; set; }
@@ -38,9 +40,9 @@ public sealed class FinancialRequest
     public required string Response { get; set; }
     public int Status { get; set; }
 }
-public sealed record TransactionInput(Guid RequestId, string? Kind, Guid AccountId, Guid? DestinationAccountId, Guid? CategoryId,
+public sealed record TransactionInput(Guid RequestId, string? Kind, Guid? AccountId, Guid? DestinationAccountId, Guid? CategoryId,
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal Amount,
-    DateOnly Date, string? Description = null, Guid? Version = null, string? Reason = null);
+    DateOnly Date, string? Description = null, Guid? Version = null, string? Reason = null, Guid? CardId = null);
 public sealed record VoidInput(Guid RequestId, Guid Version, string? Reason);
 
 public static class TransactionRules
@@ -53,11 +55,11 @@ public static class TransactionRules
         tx.ToTable("TRANSACTIONS", t =>
         {
             t.HasCheckConstraint("CK_TRANSACTIONS_Amount", "\"Amount\" > 0");
-            t.HasCheckConstraint("CK_TRANSACTIONS_Shape", "(\"Kind\" IN ('income','expense') AND \"CategoryId\" IS NOT NULL AND \"DestinationAccountId\" IS NULL) OR (\"Kind\" = 'transfer' AND \"CategoryId\" IS NULL AND \"DestinationAccountId\" IS NOT NULL AND \"AccountId\" <> \"DestinationAccountId\")");
+            t.HasCheckConstraint("CK_TRANSACTIONS_Shape", "(\"Kind\" IN ('income','expense') AND \"CategoryId\" IS NOT NULL AND \"DestinationAccountId\" IS NULL AND (\"AccountId\" IS NOT NULL OR (\"Kind\"='expense' AND \"CardId\" IS NOT NULL))) OR (\"Kind\"='transfer' AND \"AccountId\" IS NOT NULL AND \"CardId\" IS NULL AND \"CategoryId\" IS NULL AND \"DestinationAccountId\" IS NOT NULL AND \"AccountId\"<>\"DestinationAccountId\") OR (\"Kind\"='card_payment' AND \"CardId\" IS NOT NULL AND \"AccountId\" IS NOT NULL AND \"CategoryId\" IS NULL AND \"DestinationAccountId\" IS NULL)");
         });
         tx.HasKey(x => x.Id); tx.HasAlternateKey(x => new { x.Id, x.UserId });
         tx.Property(x => x.Amount).HasPrecision(18, 2);
-        tx.Property(x => x.Kind).HasMaxLength(10); tx.Property(x => x.Description).HasMaxLength(500);
+        tx.Property(x => x.Kind).HasMaxLength(15); tx.Property(x => x.Description).HasMaxLength(500);
         tx.Property(x => x.Version).IsConcurrencyToken();
         tx.HasIndex(x => new { x.UserId, x.Date, x.Id });
         tx.HasOne<FinancialAccount>().WithMany().HasForeignKey(x => new { x.AccountId, x.UserId }).HasPrincipalKey(x => new { x.Id, x.UserId }).OnDelete(DeleteBehavior.Restrict);

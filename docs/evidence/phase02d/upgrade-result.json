@@ -1,0 +1,5 @@
+{
+  "database": "alinea02d_upgrade_4d79ad81",
+  "dataPreserved": true,
+  "schema": " migrations \n------------\n          5\n(1 row)\n\n"
+}

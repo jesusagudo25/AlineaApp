@@ -10,6 +10,9 @@ public sealed class AlineaDbContext(DbContextOptions<AlineaDbContext> options) :
 {
     public DbSet<AllowedPhone> AllowedPhones => Set<AllowedPhone>();
     public DbSet<FinancialTransaction> Transactions => Set<FinancialTransaction>();
+    public DbSet<PaymentCard> Cards => Set<PaymentCard>();
+    public DbSet<Commitment> Commitments => Set<Commitment>();
+    public DbSet<CommitmentOccurrence> CommitmentOccurrences => Set<CommitmentOccurrence>();
     public DbSet<TransactionRevision> TransactionRevisions => Set<TransactionRevision>();
     public DbSet<FinancialRequest> FinancialRequests => Set<FinancialRequest>();
     public DbSet<Bank> Banks => Set<Bank>();
@@ -26,6 +29,7 @@ public sealed class AlineaDbContext(DbContextOptions<AlineaDbContext> options) :
         base.OnModelCreating(modelBuilder);
         CatalogRules.Configure(modelBuilder);
         TransactionRules.Configure(modelBuilder);
+        PlanningRules.Configure(modelBuilder);
         modelBuilder.Entity<AppUser>(user =>
         {
             user.Property(x => x.PhoneNumber).HasMaxLength(16);

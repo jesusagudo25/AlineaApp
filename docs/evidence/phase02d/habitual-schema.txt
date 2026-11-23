@@ -1,0 +1,16 @@
+ habitual_migrations 
+---------------------
+                   2
+(1 row)
+
+ has_transactions | has_cards 
+------------------+-----------
+ f                | f
+(1 row)
+
+         Clave         | Valor 
+-----------------------+-------
+ ACCESO_PROTEGIDO      | YES
+ MONEDA_PREDETERMINADA | USD
+(2 rows)
+

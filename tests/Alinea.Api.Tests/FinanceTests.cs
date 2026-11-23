@@ -90,7 +90,7 @@ public sealed class FinanceTests
         Assert.Equal(HttpStatusCode.Conflict, (await Write(client, "/api/finance/categories", new { name = "general", kind = "expense" })).StatusCode);
         using var scope = factory.Services.CreateScope(); var db = scope.ServiceProvider.GetRequiredService<AlineaDbContext>();
         Assert.Equal(2, await db.Banks.CountAsync()); Assert.Equal(12.34m, (await db.Accounts.SingleAsync()).OpeningBalance);
-        Assert.Empty(await db.Database.GetPendingMigrationsAsync()); Assert.Equal(4, (await db.Database.GetAppliedMigrationsAsync()).Count());
+        Assert.Empty(await db.Database.GetPendingMigrationsAsync()); Assert.Equal(5, (await db.Database.GetAppliedMigrationsAsync()).Count());
     }
 
     [Fact]

@@ -3,6 +3,7 @@ import { AuthError } from '../auth/api';
 import { accounts, banks, categories, catalogRequest, money, type Account, type Bank, type Catalog, type Category } from './api';
 import './catalog.css';
 import { TransactionsApp } from './TransactionsApp';
+import { PlanningApp } from './PlanningApp';
 
 type Form = { id: string | null; version?: string; name: string; kind: string; bankId: string; openingBalance: string; openingDate: string; isActive: boolean; confirm: boolean; locked: boolean };
 const titles: Record<Catalog, string> = { banks: 'Bancos', accounts: 'Cuentas', categories: 'Categorías' };
@@ -120,6 +121,7 @@ function CatalogContent({ onSessionExpired }: { onSessionExpired: () => void }) 
 }
 
 export function CatalogApp({ onSessionExpired }: { onSessionExpired: () => void }) {
-  const [section, setSection] = useState<'catalogs' | 'movements'>('catalogs');
-  return <><nav className="finance-sections" aria-label="Finanzas"><button className="secondary-button" aria-current={section === 'movements' ? 'page' : undefined} onClick={() => setSection('movements')}>Movimientos</button><button className="secondary-button" aria-current={section === 'catalogs' ? 'page' : undefined} onClick={() => setSection('catalogs')}>Catálogos</button></nav>{section === 'catalogs' ? <CatalogContent onSessionExpired={onSessionExpired} /> : <TransactionsApp onSessionExpired={onSessionExpired} />}</>;
+  const [section, setSection] = useState<'catalogs' | 'movements' | 'cards' | 'commitments'>('catalogs');
+  const labels = { movements: 'Movimientos', catalogs: 'Catálogos', cards: 'Tarjetas', commitments: 'Compromisos' } as const;
+  return <><nav className="finance-sections" aria-label="Finanzas">{(Object.keys(labels) as Array<keyof typeof labels>).map(key => <button key={key} className="secondary-button" aria-current={section === key ? 'page' : undefined} onClick={() => setSection(key)}>{labels[key]}</button>)}</nav>{section === 'catalogs' ? <CatalogContent onSessionExpired={onSessionExpired} /> : section === 'movements' ? <TransactionsApp onSessionExpired={onSessionExpired} /> : <PlanningApp key={section} mode={section} onSessionExpired={onSessionExpired} />}</>;
 }

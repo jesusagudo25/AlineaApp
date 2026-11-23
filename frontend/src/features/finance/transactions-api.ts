@@ -1,9 +1,9 @@
 import { isRecord } from '../auth/api';
-export type Movement = { id: string; version: string; kind: 'income' | 'expense' | 'transfer'; accountId: string; destinationAccountId: string | null; categoryId: string | null; amount: string; date: string; description: string; isVoided: boolean };
+export type Movement = { id: string; version: string; kind: 'income' | 'expense' | 'transfer' | 'card_payment'; accountId: string | null; cardId?: string | null; commitmentOccurrenceId?: string | null; destinationAccountId: string | null; categoryId: string | null; amount: string; date: string; description: string; isVoided: boolean };
 export type History = { items: Movement[]; total: number; page: number; pageSize: number; income: string; expense: string };
 export function movement(value: unknown): Movement {
-  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.version !== 'string' || !['income', 'expense', 'transfer'].includes(String(value.kind))
-    || typeof value.accountId !== 'string' || !(value.destinationAccountId === null || typeof value.destinationAccountId === 'string')
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.version !== 'string' || !['income', 'expense', 'transfer', 'card_payment'].includes(String(value.kind))
+    || !(value.accountId === null || typeof value.accountId === 'string') || !(value.cardId == null || typeof value.cardId === 'string') || !(value.commitmentOccurrenceId == null || typeof value.commitmentOccurrenceId === 'string') || !(value.destinationAccountId === null || typeof value.destinationAccountId === 'string')
     || !(value.categoryId === null || typeof value.categoryId === 'string') || typeof value.amount !== 'string' || !/^\d{1,16}\.\d{2}$/.test(value.amount)
     || typeof value.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.date) || typeof value.description !== 'string' || typeof value.isVoided !== 'boolean') throw new Error('Movimiento recibido no válido.');
   return value as Movement;

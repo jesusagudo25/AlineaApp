@@ -92,6 +92,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "AlineaApp
 app.MapAuth();
 app.MapFinancialCatalogs();
 app.MapFinancialTransactions();
+app.MapFinancialPlanning();
 app.MapGet("/health/ready", async (ReadinessCheck check, CancellationToken cancellationToken) =>
     await check.IsReadyAsync(cancellationToken)
         ? Results.Ok(new { status = "ready" })

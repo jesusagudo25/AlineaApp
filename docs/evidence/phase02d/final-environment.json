@@ -1,0 +1,7 @@
+{
+  "observedAt": "2026-11-23T00:50:05.094Z",
+  "habitualReadinessStatus": 200,
+  "postgresReinitializationsObservedSince": "2026-11-23T00:34:00Z",
+  "reinitializations": 0,
+  "nativeVerifierProcessesStopped": true
+}

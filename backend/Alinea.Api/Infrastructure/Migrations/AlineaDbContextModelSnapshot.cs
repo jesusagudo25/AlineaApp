@@ -372,6 +372,124 @@ namespace Alinea.Api.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Alinea.Api.Features.Finance.Commitment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("AnchorDay")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateOnly?>("NextDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId", "UserId");
+
+                    b.HasIndex("UserId", "NextDate");
+
+                    b.ToTable("COMMITMENTS", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_COMMITMENTS_Values", "\"Kind\" IN ('income','expense') AND \"Amount\">0 AND \"Frequency\" IN ('once','weekly','fortnightly','monthly') AND \"Status\" IN ('active','paused','inactive') AND \"AnchorDay\" BETWEEN 1 AND 31");
+                        });
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.CommitmentOccurrence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CommitmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Concept")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId", "UserId");
+
+                    b.HasIndex("CommitmentId", "DueDate")
+                        .IsUnique();
+
+                    b.HasIndex("CommitmentId", "UserId");
+
+                    b.ToTable("COMMITMENT_OCCURRENCES", (string)null);
+                });
+
             modelBuilder.Entity("Alinea.Api.Features.Finance.FinancialAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -476,14 +594,20 @@ namespace Alinea.Api.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("AccountId")
+                    b.Property<Guid?>("AccountId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<Guid?>("CardId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CommitmentOccurrenceId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -505,8 +629,8 @@ namespace Alinea.Api.Infrastructure.Migrations
 
                     b.Property<string>("Kind")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -521,9 +645,17 @@ namespace Alinea.Api.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CommitmentOccurrenceId")
+                        .IsUnique()
+                        .HasFilter("\"CommitmentOccurrenceId\" IS NOT NULL AND NOT \"IsVoided\"");
+
                     b.HasIndex("AccountId", "UserId");
 
+                    b.HasIndex("CardId", "UserId");
+
                     b.HasIndex("CategoryId", "UserId");
+
+                    b.HasIndex("CommitmentOccurrenceId", "UserId");
 
                     b.HasIndex("DestinationAccountId", "UserId");
 
@@ -533,7 +665,81 @@ namespace Alinea.Api.Infrastructure.Migrations
                         {
                             t.HasCheckConstraint("CK_TRANSACTIONS_Amount", "\"Amount\" > 0");
 
-                            t.HasCheckConstraint("CK_TRANSACTIONS_Shape", "(\"Kind\" IN ('income','expense') AND \"CategoryId\" IS NOT NULL AND \"DestinationAccountId\" IS NULL) OR (\"Kind\" = 'transfer' AND \"CategoryId\" IS NULL AND \"DestinationAccountId\" IS NOT NULL AND \"AccountId\" <> \"DestinationAccountId\")");
+                            t.HasCheckConstraint("CK_TRANSACTIONS_Shape", "(\"Kind\" IN ('income','expense') AND \"CategoryId\" IS NOT NULL AND \"DestinationAccountId\" IS NULL AND (\"AccountId\" IS NOT NULL OR (\"Kind\"='expense' AND \"CardId\" IS NOT NULL))) OR (\"Kind\"='transfer' AND \"AccountId\" IS NOT NULL AND \"CardId\" IS NULL AND \"CategoryId\" IS NULL AND \"DestinationAccountId\" IS NOT NULL AND \"AccountId\"<>\"DestinationAccountId\") OR (\"Kind\"='card_payment' AND \"CardId\" IS NOT NULL AND \"AccountId\" IS NOT NULL AND \"CategoryId\" IS NULL AND \"DestinationAccountId\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.PaymentCard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("ClosingDay")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("InitialDebt")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateOnly>("OpeningDate")
+                        .HasColumnType("date");
+
+                    b.Property<int?>("PaymentDay")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId", "UserId");
+
+                    b.HasIndex("UserId", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("PAYMENT_CARDS", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CARDS_Shape", "(\"Kind\"='debit' AND \"AccountId\" IS NOT NULL AND \"CreditLimit\"=0 AND \"InitialDebt\"=0 AND \"ClosingDay\" IS NULL AND \"PaymentDay\" IS NULL) OR (\"Kind\"='credit' AND \"AccountId\" IS NULL AND \"CreditLimit\">0 AND \"InitialDebt\">=0 AND \"ClosingDay\" BETWEEN 1 AND 31 AND \"PaymentDay\" BETWEEN 1 AND 31 AND \"ClosingDay\" IS NOT NULL AND \"PaymentDay\" IS NOT NULL)");
                         });
                 });
 
@@ -546,7 +752,8 @@ namespace Alinea.Api.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("At")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Number").HasColumnType("integer");
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Operation")
                         .IsRequired()
@@ -571,9 +778,10 @@ namespace Alinea.Api.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TransactionId", "UserId");
+                    b.HasIndex("TransactionId", "Number")
+                        .IsUnique();
 
-                    b.HasIndex("TransactionId", "Number").IsUnique();
+                    b.HasIndex("TransactionId", "UserId");
 
                     b.ToTable("TRANSACTION_REVISIONS", (string)null);
                 });
@@ -739,6 +947,33 @@ namespace Alinea.Api.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Alinea.Api.Features.Finance.Commitment", b =>
+                {
+                    b.HasOne("Alinea.Api.Features.Finance.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.CommitmentOccurrence", b =>
+                {
+                    b.HasOne("Alinea.Api.Features.Finance.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Alinea.Api.Features.Finance.Commitment", null)
+                        .WithMany()
+                        .HasForeignKey("CommitmentId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Alinea.Api.Features.Finance.FinancialAccount", b =>
                 {
                     b.HasOne("Alinea.Api.Features.Auth.AppUser", null)
@@ -771,8 +1006,13 @@ namespace Alinea.Api.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("AccountId", "UserId")
                         .HasPrincipalKey("Id", "UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Alinea.Api.Features.Finance.PaymentCard", null)
+                        .WithMany()
+                        .HasForeignKey("CardId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Alinea.Api.Features.Finance.Category", null)
                         .WithMany()
@@ -780,9 +1020,30 @@ namespace Alinea.Api.Infrastructure.Migrations
                         .HasPrincipalKey("Id", "UserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Alinea.Api.Features.Finance.CommitmentOccurrence", null)
+                        .WithMany()
+                        .HasForeignKey("CommitmentOccurrenceId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Alinea.Api.Features.Finance.FinancialAccount", null)
                         .WithMany()
                         .HasForeignKey("DestinationAccountId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.PaymentCard", b =>
+                {
+                    b.HasOne("Alinea.Api.Features.Auth.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Alinea.Api.Features.Finance.FinancialAccount", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId", "UserId")
                         .HasPrincipalKey("Id", "UserId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });

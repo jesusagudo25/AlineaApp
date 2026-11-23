@@ -1,0 +1,4 @@
+NAME                      STATUS
+alinea-local-api-1        Up 3 hours (healthy)
+alinea-local-frontend-1   Up 3 hours (healthy)
+alinea-local-postgres-1   Up 3 hours (healthy)
