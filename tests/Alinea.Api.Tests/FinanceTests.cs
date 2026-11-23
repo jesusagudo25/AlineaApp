@@ -12,14 +12,14 @@ namespace Alinea.Api.Tests;
 
 public sealed class FinanceTests
 {
-    private static async Task<JsonNode> Json(HttpResponseMessage response) => JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
-    private static async Task<HttpResponseMessage> Write(HttpClient client, string path, object body, string method = "POST")
+    internal static async Task<JsonNode> Json(HttpResponseMessage response) => JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
+    internal static async Task<HttpResponseMessage> Write(HttpClient client, string path, object body, string method = "POST")
     {
         var csrf = await Json(await client.GetAsync("/api/auth/csrf"));
         using var request = new HttpRequestMessage(new HttpMethod(method), path) { Content = JsonContent.Create(body) };
         request.Headers.Add("X-CSRF-TOKEN", csrf["token"]!.GetValue<string>()); return await client.SendAsync(request);
     }
-    private static async Task<HttpClient> User(AuthFactory factory, string phone)
+    internal static async Task<HttpClient> User(AuthFactory factory, string phone)
     {
         await factory.Admin("--allow-phone", phone); var client = factory.Browser();
         var request = await Write(client, "/api/auth/otp/request", new { phone, purpose = "register" });
@@ -32,12 +32,12 @@ public sealed class FinanceTests
         var result = await Write(client, "/api/auth/register", new { verificationToken = (await Json(proof))["verificationToken"]!.GetValue<string>() });
         Assert.Equal(HttpStatusCode.OK, result.StatusCode); return client;
     }
-    private static async Task<JsonNode> Create(HttpClient client, string path, object input)
+    internal static async Task<JsonNode> Create(HttpClient client, string path, object input)
     {
         var response = await Write(client, "/api/finance/" + path, input);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode); return await Json(response);
     }
-    private static object AccountBody(string name, Guid? bank = null, string amount = "120.10", string kind = "bank", string? version = null, bool active = true, bool confirm = false) =>
+    internal static object AccountBody(string name, Guid? bank = null, string amount = "120.10", string kind = "bank", string? version = null, bool active = true, bool confirm = false) =>
         new { name, kind, bankId = bank, openingBalance = amount, openingDate = "2026-11-10", currency = "USD", version, isActive = active, confirmOpeningChange = confirm };
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class FinanceTests
         Assert.Equal(HttpStatusCode.Conflict, (await Write(client, "/api/finance/categories", new { name = "general", kind = "expense" })).StatusCode);
         using var scope = factory.Services.CreateScope(); var db = scope.ServiceProvider.GetRequiredService<AlineaDbContext>();
         Assert.Equal(2, await db.Banks.CountAsync()); Assert.Equal(12.34m, (await db.Accounts.SingleAsync()).OpeningBalance);
-        Assert.Empty(await db.Database.GetPendingMigrationsAsync()); Assert.Equal(3, (await db.Database.GetAppliedMigrationsAsync()).Count());
+        Assert.Empty(await db.Database.GetPendingMigrationsAsync()); Assert.Equal(4, (await db.Database.GetAppliedMigrationsAsync()).Count());
     }
 
     [Fact]

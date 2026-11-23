@@ -30,7 +30,7 @@ export function categories(value: unknown): Category[] {
 export function accounts(value: unknown): Account[] {
   if (!Array.isArray(value) || !value.every(v => base(v) && isRecord(v) && (v.kind === 'bank' || v.kind === 'cash') && (v.bankId === null || typeof v.bankId === 'string')
     && v.currency === 'USD' && typeof v.openingDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.openingDate) && typeof v.openingLocked === 'boolean'
-    && typeof v.openingBalance === 'string' && /^-?\d{1,16}\.\d{2}$/.test(v.openingBalance) && typeof v.currentBalance === 'string' && /^-?\d{1,16}\.\d{2}$/.test(v.currentBalance))) throw new Error('Respuesta de cuentas no válida.');
+    && typeof v.openingBalance === 'string' && /^-?\d{1,16}\.\d{2}$/.test(v.openingBalance) && typeof v.currentBalance === 'string' && /^-?\d{1,29}\.\d{2}$/.test(v.currentBalance))) throw new Error('Respuesta de cuentas no válida.');
   return value as Account[];
 }
 export function money(value: string): string {

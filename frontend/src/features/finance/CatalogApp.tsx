@@ -2,13 +2,14 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AuthError } from '../auth/api';
 import { accounts, banks, categories, catalogRequest, money, type Account, type Bank, type Catalog, type Category } from './api';
 import './catalog.css';
+import { TransactionsApp } from './TransactionsApp';
 
 type Form = { id: string | null; version?: string; name: string; kind: string; bankId: string; openingBalance: string; openingDate: string; isActive: boolean; confirm: boolean; locked: boolean };
 const titles: Record<Catalog, string> = { banks: 'Bancos', accounts: 'Cuentas', categories: 'Categorías' };
 const singular: Record<Catalog, string> = { banks: 'banco', accounts: 'cuenta', categories: 'categoría' };
 function emptyForm(tab: Catalog): Form { return { id: null, name: '', kind: tab === 'accounts' ? 'cash' : 'expense', bankId: '', openingBalance: '', openingDate: '', isActive: true, confirm: false, locked: false }; }
 
-export function CatalogApp({ onSessionExpired }: { onSessionExpired: () => void }) {
+function CatalogContent({ onSessionExpired }: { onSessionExpired: () => void }) {
   const [tab, setTab] = useState<Catalog>('accounts');
   const [bankRows, setBanks] = useState<Bank[]>([]);
   const [accountRows, setAccounts] = useState<Account[]>([]);
@@ -114,6 +115,11 @@ export function CatalogApp({ onSessionExpired }: { onSessionExpired: () => void 
           {'openingBalance' in row && <dl><div><dt>Saldo inicial</dt><dd>{money(row.openingBalance)} USD</dd></div><div><dt>Saldo actual</dt><dd>{money(row.currentBalance)} USD</dd></div><div><dt>Apertura</dt><dd>{row.openingDate}</dd></div></dl>}
         </div><button className="secondary-button" disabled={saving} onClick={() => edit(row)} aria-label={`Editar ${row.name}`}>Editar</button>
       </li>)}</ul>}
-    {tab === 'accounts' && <p className="field-hint">El saldo actual corresponde a la apertura. El registro de movimientos aún no está disponible.</p>}
+    {tab === 'accounts' && <p className="field-hint">Saldo actual: apertura más ingresos, menos gastos, más transferencias recibidas y menos enviadas. Los movimientos anulados no afectan el saldo.</p>}
   </section>;
+}
+
+export function CatalogApp({ onSessionExpired }: { onSessionExpired: () => void }) {
+  const [section, setSection] = useState<'catalogs' | 'movements'>('catalogs');
+  return <><nav className="finance-sections" aria-label="Finanzas"><button className="secondary-button" aria-current={section === 'movements' ? 'page' : undefined} onClick={() => setSection('movements')}>Movimientos</button><button className="secondary-button" aria-current={section === 'catalogs' ? 'page' : undefined} onClick={() => setSection('catalogs')}>Catálogos</button></nav>{section === 'catalogs' ? <CatalogContent onSessionExpired={onSessionExpired} /> : <TransactionsApp onSessionExpired={onSessionExpired} />}</>;
 }

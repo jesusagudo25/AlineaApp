@@ -1,0 +1,83 @@
+powershell :  Container alinea-transactions-verify-frontend-1 Stopping 
+At line:2 char:1
++ powershell -NoProfile -ExecutionPolicy Bypass -File infra/verify-tran ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container alin...end-1 Stopping :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Container alinea-transactions-verify-frontend-1 Stopped 
+ Container alinea-transactions-verify-frontend-1 Removing 
+ Container alinea-transactions-verify-frontend-1 Removed 
+ Container alinea-transactions-verify-api-1 Stopping 
+ Container alinea-transactions-verify-api-1 Stopped 
+ Container alinea-transactions-verify-api-1 Removing 
+ Container alinea-transactions-verify-api-1 Removed 
+ Container alinea-transactions-verify-postgres-1 Stopping 
+ Container alinea-transactions-verify-postgres-1 Stopped 
+ Container alinea-transactions-verify-postgres-1 Removing 
+ Container alinea-transactions-verify-postgres-1 Removed 
+ Network alinea-transactions-verify_data Removing 
+ Network alinea-transactions-verify_web Removing 
+ Network alinea-transactions-verify_data Removed 
+ Network alinea-transactions-verify_web Removed 
+ Network alinea-transactions-verify_web Creating 
+ Network alinea-transactions-verify_data Creating 
+ Network alinea-transactions-verify_web Creating 
+ Network alinea-transactions-verify_data Creating 
+ Network alinea-transactions-verify_web Created 
+ Network alinea-transactions-verify_web Created 
+ Network alinea-transactions-verify_data Created 
+ Network alinea-transactions-verify_data Created 
+ Container alinea-transactions-verify-postgres-1 Creating 
+ Container alinea-transactions-verify-postgres-1 Created 
+ Container alinea-transactions-verify-api-1 Creating 
+ Container alinea-transactions-verify-api-1 Created 
+ Container alinea-transactions-verify-frontend-1 Creating 
+ Container alinea-transactions-verify-frontend-1 Created 
+ Container alinea-transactions-verify-postgres-1 Starting 
+ Container alinea-transactions-verify-postgres-1 Started 
+ Container alinea-transactions-verify-postgres-1 Waiting 
+ Container alinea-transactions-verify-postgres-1 Healthy 
+ Container alinea-transactions-verify-api-1 Starting 
+ Container alinea-transactions-verify-api-1 Started 
+ Container alinea-transactions-verify-api-1 Waiting 
+ Container alinea-transactions-verify-api-1 Healthy 
+ Container alinea-transactions-verify-frontend-1 Starting 
+ Container alinea-transactions-verify-frontend-1 Started 
+ Container alinea-transactions-verify-frontend-1 Waiting 
+ Container alinea-transactions-verify-postgres-1 Waiting 
+ Container alinea-transactions-verify-api-1 Waiting 
+ Container alinea-transactions-verify-postgres-1 Healthy 
+ Container alinea-transactions-verify-api-1 Healthy 
+ Container alinea-transactions-verify-frontend-1 Healthy 
+ Container alinea-transactions-verify-postgres-1 Running 
+ Container alinea-transactions-verify-postgres-1 Waiting 
+ Container alinea-transactions-verify-postgres-1 Healthy 
+ Container alinea-transactions-verify-api-run-c921af519e41 Creating 
+ Container alinea-transactions-verify-api-run-c921af519e41 Created 
+Cannot load library libgssapi_krb5.so.2 
+Error: libgssapi_krb5.so.2: cannot open shared object file: No such file or directory
+{"EventId":0,"LogLevel":"Information","Category":"Alinea.Api","Message":"Database migration and non-destructive initialization completed","State":{"{OriginalFormat}":"Database migration and non-destructive initialization completed"}}
+{"EventId":0,"LogLevel":"Information","Category":"Alinea.Api","Message":"Authentication administrative operation completed; subject suppressed","State":{"{OriginalFormat}":"Authentication administrative operation completed; subject suppressed"}}
+ Container alinea-transactions-verify-postgres-1 Running 
+ Container alinea-transactions-verify-postgres-1 Waiting 
+ Container alinea-transactions-verify-postgres-1 Healthy 
+ Container alinea-transactions-verify-api-run-cc6771b05444 Creating 
+ Container alinea-transactions-verify-api-run-cc6771b05444 Created 
+Cannot load library libgssapi_krb5.so.2 
+Error: libgssapi_krb5.so.2: cannot open shared object file: No such file or directory
+{"EventId":0,"LogLevel":"Information","Category":"Alinea.Api","Message":"Database migration and non-destructive initialization completed","State":{"{OriginalFormat}":"Database migration and non-destructive initialization completed"}}
+{"EventId":0,"LogLevel":"Information","Category":"Alinea.Api","Message":"Authentication administrative operation completed; subject suppressed","State":{"{OriginalFormat}":"Authentication administrative operation completed; subject suppressed"}}
+npm notice run alinea-frontend@0.0.0 npx
+npm notice run playwright test --config playwright.transactions.config.ts
+
+Running 2 tests using 2 workers
+
+(node:7732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [desktop] › e2e\transactions.spec.ts:6:1 › movimientos reales, saldos, filtros, edición y anulación con trazabilidad (5.4s)
+  ok 1 [mobile] › e2e\transactions.spec.ts:6:1 › movimientos reales, saldos, filtros, edición y anulación con trazabilidad (5.6s)
+
+  2 passed (6.6s)

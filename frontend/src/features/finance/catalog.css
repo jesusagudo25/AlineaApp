@@ -24,3 +24,11 @@
 .session-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .session-header h2 { font-size: 20px; }
 @media (min-width: 1000px) { .catalog { display: grid; grid-template-columns: 200px minmax(0, 1fr); column-gap: 32px; } .catalog-nav { grid-column: 1; grid-row: 1 / span 20; align-self: start; flex-direction: column; } .catalog > :not(.catalog-nav) { grid-column: 2; } }
+
+.finance-sections { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.finance-sections button[aria-current] { font-weight: 700; text-decoration: underline; }
+.movements { min-width: 0; }
+.movement-filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-block: 24px; }
+.movement-filters label { display: grid; gap: 8px; flex: 1 1 150px; min-width: 0; }
+.movement-filters input, .movement-filters select { min-height: 44px; width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--control-border); background: var(--surface); color: var(--ink); border-radius: 6px; font-size: 16px; }
+.movements .catalog-form { overflow-wrap: anywhere; }

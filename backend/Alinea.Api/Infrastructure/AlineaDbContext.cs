@@ -9,6 +9,9 @@ namespace Alinea.Api.Infrastructure;
 public sealed class AlineaDbContext(DbContextOptions<AlineaDbContext> options) : IdentityDbContext<AppUser>(options)
 {
     public DbSet<AllowedPhone> AllowedPhones => Set<AllowedPhone>();
+    public DbSet<FinancialTransaction> Transactions => Set<FinancialTransaction>();
+    public DbSet<TransactionRevision> TransactionRevisions => Set<TransactionRevision>();
+    public DbSet<FinancialRequest> FinancialRequests => Set<FinancialRequest>();
     public DbSet<Bank> Banks => Set<Bank>();
     public DbSet<FinancialAccount> Accounts => Set<FinancialAccount>();
     public DbSet<Category> Categories => Set<Category>();
@@ -22,6 +25,7 @@ public sealed class AlineaDbContext(DbContextOptions<AlineaDbContext> options) :
     {
         base.OnModelCreating(modelBuilder);
         CatalogRules.Configure(modelBuilder);
+        TransactionRules.Configure(modelBuilder);
         modelBuilder.Entity<AppUser>(user =>
         {
             user.Property(x => x.PhoneNumber).HasMaxLength(16);

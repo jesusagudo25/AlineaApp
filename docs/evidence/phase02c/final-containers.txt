@@ -1,0 +1,9 @@
+NAME                           STATE     STATUS
+alinea-local-api-1             running   Up 49 minutes (healthy)
+alinea-local-frontend-1        running   Up 49 minutes (healthy)
+alinea-local-postgres-1        running   Up 49 minutes (healthy)
+alinea-local-postgres-test-1   exited    Exited (0) Less than a second ago
+NAME                                    STATE     STATUS
+alinea-transactions-verify-api-1        exited    Exited (0) 1 second ago
+alinea-transactions-verify-frontend-1   exited    Exited (0) 2 seconds ago
+alinea-transactions-verify-postgres-1   exited    Exited (0) 1 second ago

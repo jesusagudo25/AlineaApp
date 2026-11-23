@@ -105,3 +105,7 @@ El original del contrato se preservó localmente y se excluyó de Git por conten
 [ADR 0001](DECISIONS/0001-fundaciones.md) registra decisiones de arquitectura, CORS, seed, redes, versiones, build multiarquitectura y backup. Riesgos actuales: HTTP y migración al inicio son conveniencias exclusivamente locales; la cuenta PostgreSQL del contenedor tiene privilegios de inicialización, inadecuados como cuenta de aplicación pública; los digests fijados requieren actualización deliberada; no hay recuperación externa probada ni validación en hardware Pi.
 
 Próxima fase recomendada: **FASE 01 — registro restringido y autenticación OTP por SMS**, sin implementación anticipada. No se hicieron commits, pushes, despliegues ni cambios de Cloudflare/Raspberry Pi.
+
+## Actualización de Fase 02C — 2026-11-22
+
+El contenido anterior conserva la evidencia histórica de Fase 00. Estado vigente de transacciones en [resultado 02C](FASE-02C-RESULTADOS.md): 27 pruebas PostgreSQL/backend, 10 UI y 2 Playwright aprobadas; migración aditiva probada solo en bases aisladas; respaldo y restauración sintéticos coincidentes. [Contenedores al cierre](evidence/phase02c/final-containers.txt): plataforma habitual saludable, pruebas temporales detenidas. [Revisión heurística de datos sensibles](evidence/phase02c/sensitive-data-scan.json) sin hallazgos nuevos; dos fixtures de normalización de autenticación existentes revisados sin propagar valores. No sustituye una auditoría de seguridad general. Sin commits, pushes, despliegues, SMS reales ni avance a otra fase.

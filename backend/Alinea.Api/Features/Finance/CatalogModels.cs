@@ -33,6 +33,7 @@ public sealed class Category : OwnedCatalog
 {
     public required string Kind { get; set; }
     public string? InitialKey { get; set; }
+    public bool UsedByTransactions { get; set; }
 }
 public sealed record BankInput(string? Name, bool IsActive = true, Guid? Version = null);
 public sealed record CategoryInput(string? Name, string? Kind, bool IsActive = true, Guid? Version = null);

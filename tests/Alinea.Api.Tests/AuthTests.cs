@@ -61,6 +61,9 @@ public sealed class AuthFactory : WebApplicationFactory<Program>
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AlineaDbContext>();
         // Solo la base efímera ALINEA_TEST_CONNECTION: nunca la base del piloto.
+        await db.FinancialRequests.ExecuteDeleteAsync();
+        await db.TransactionRevisions.ExecuteDeleteAsync();
+        await db.Transactions.ExecuteDeleteAsync();
         await db.Accounts.ExecuteDeleteAsync(); await db.Categories.ExecuteDeleteAsync(); await db.Banks.ExecuteDeleteAsync();
         await db.AuthSessions.ExecuteDeleteAsync(); await db.Users.ExecuteDeleteAsync();
         await db.OtpChallenges.ExecuteDeleteAsync(); await db.AuthRateBuckets.ExecuteDeleteAsync();

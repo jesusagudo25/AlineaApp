@@ -14,37 +14,14 @@ public static class CatalogEndpoints
     private static IResult Conflict(string title) => Results.Problem(statusCode: 409, title: title);
     private static object BankView(Bank row) => new { row.Id, row.Name, row.IsActive, row.Version };
     private static object CategoryView(Category row) => new { row.Id, row.Name, row.Kind, row.IsActive, row.Version, isInitial = row.InitialKey is not null };
-    private static object AccountView(FinancialAccount row) => new { row.Id, row.Name, row.Kind, row.BankId, row.Currency,
-        openingBalance = CatalogRules.Money(row.OpeningBalance), currentBalance = CatalogRules.Money(row.OpeningBalance), row.OpeningDate,
+    private static object AccountView(FinancialAccount row, decimal balance) => new { row.Id, row.Name, row.Kind, row.BankId, row.Currency,
+        openingBalance = CatalogRules.Money(row.OpeningBalance), currentBalance = CatalogRules.Money(balance), row.OpeningDate,
         openingLocked = row.OpeningLockedAt is not null, row.IsActive, row.Version };
 
     public static void MapFinancialCatalogs(this WebApplication app)
     {
         var group = app.MapGroup("/api/finance").RequireAuthorization();
-        group.AddEndpointFilter(async (context, next) =>
-        {
-            var http = context.HttpContext;
-            if (!http.Request.IsHttps && !http.RequestServices.GetRequiredService<AuthOptions>().AllowInsecureLocalHttp)
-                return Invalid("Se requiere HTTPS.");
-            if (HttpMethods.IsGet(http.Request.Method)) return await next(context);
-            try { await http.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(http); }
-            catch (AntiforgeryValidationException) { return Invalid("Solicitud no válida. Actualiza la página."); }
-            var db = http.RequestServices.GetRequiredService<AlineaDbContext>();
-            await using var transaction = await db.Database.BeginTransactionAsync(http.RequestAborted);
-            try
-            {
-                var owner = Owner(http);
-                await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({owner}, 202602))", http.RequestAborted);
-                var result = await next(context);
-                await transaction.CommitAsync(http.RequestAborted);
-                return result;
-            }
-            catch (DbUpdateConcurrencyException) { return Conflict("El registro cambió. Actualiza la lista antes de editar."); }
-            catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: "23505" })
-            { return Conflict("Ya existe un registro con ese nombre. Revisa también los inactivos."); }
-            catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: "23503" or "23514" })
-            { return Conflict("La operación no es compatible con los registros relacionados."); }
-        });
+        Protect(group);
         group.MapGet("/banks", async (HttpContext http, AlineaDbContext db, CancellationToken ct) =>
             Results.Ok((await db.Banks.AsNoTracking().Where(x => x.UserId == Owner(http)).OrderBy(x => x.Name).ToListAsync(ct)).Select(BankView)));
         group.MapGet("/banks/{id:guid}", async (Guid id, HttpContext http, AlineaDbContext db, CancellationToken ct) =>
@@ -53,9 +30,10 @@ public static class CatalogEndpoints
         group.MapPut("/banks/{id:guid}", (Guid id, BankInput input, HttpContext http, AlineaDbContext db, TimeProvider clock, CancellationToken ct) => SaveBank(id, input, http, db, clock, ct));
 
         group.MapGet("/accounts", async (HttpContext http, AlineaDbContext db, CancellationToken ct) =>
-            Results.Ok((await db.Accounts.AsNoTracking().Where(x => x.UserId == Owner(http)).OrderBy(x => x.Name).ToListAsync(ct)).Select(AccountView)));
+            Results.Ok((await db.Accounts.AsNoTracking().Where(x => x.UserId == Owner(http)).OrderBy(x => x.Name)
+.Select(a => new { Row = a, Balance = a.OpeningBalance + db.Transactions.Where(t => t.UserId == a.UserId && !t.IsVoided && t.AccountId == a.Id).Sum(t => t.Kind == "income" ? t.Amount : -t.Amount) + db.Transactions.Where(t => t.UserId == a.UserId && !t.IsVoided && t.DestinationAccountId == a.Id).Sum(t => t.Amount) }).ToListAsync(ct)).Select(x => AccountView(x.Row, x.Balance))));
         group.MapGet("/accounts/{id:guid}", async (Guid id, HttpContext http, AlineaDbContext db, CancellationToken ct) =>
-            await db.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.UserId == Owner(http), ct) is { } row ? Results.Ok(AccountView(row)) : Results.NotFound());
+            await db.Accounts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.UserId == Owner(http), ct) is { } row ? Results.Ok(AccountView(row, await TransactionEndpoints.Balance(db, row, ct))) : Results.NotFound());
         group.MapPost("/accounts", (AccountInput input, HttpContext http, AlineaDbContext db, TimeProvider clock, CancellationToken ct) => SaveAccount(null, input, http, db, clock, ct));
         group.MapPut("/accounts/{id:guid}", (Guid id, AccountInput input, HttpContext http, AlineaDbContext db, TimeProvider clock, CancellationToken ct) => SaveAccount(id, input, http, db, clock, ct));
 
@@ -76,6 +54,41 @@ public static class CatalogEndpoints
                     InitialKey = template.Key, CreatedAt = clock.GetUtcNow(), UpdatedAt = clock.GetUtcNow() }); count++;
             }
             await db.SaveChangesAsync(ct); return Results.Ok(new { added = count });
+        });
+    }
+
+    internal static void Protect(RouteGroupBuilder group)
+    {
+        group.AddEndpointFilter(async (context, next) =>
+        {
+            var http = context.HttpContext;
+            if (!http.Request.IsHttps && !http.RequestServices.GetRequiredService<AuthOptions>().AllowInsecureLocalHttp)
+                return Invalid("Se requiere HTTPS.");
+            if (HttpMethods.IsGet(http.Request.Method))
+            {
+                var readDb = http.RequestServices.GetRequiredService<AlineaDbContext>();
+                await using var snapshot = await readDb.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead, http.RequestAborted);
+                var response = await next(context);
+                await snapshot.CommitAsync(http.RequestAborted);
+                return response;
+            }
+            try { await http.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(http); }
+            catch (AntiforgeryValidationException) { return Invalid("Solicitud no válida. Actualiza la página."); }
+            var db = http.RequestServices.GetRequiredService<AlineaDbContext>();
+            await using var transaction = await db.Database.BeginTransactionAsync(http.RequestAborted);
+            try
+            {
+                var owner = Owner(http);
+                await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({owner}, 202602))", http.RequestAborted);
+                var result = await next(context);
+                await transaction.CommitAsync(http.RequestAborted);
+                return result;
+            }
+            catch (DbUpdateConcurrencyException) { return Conflict("El registro cambió. Actualiza la lista antes de editar."); }
+            catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: "23505" })
+            { return Conflict("Ya existe un registro con ese nombre. Revisa también los inactivos."); }
+            catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: "23503" or "23514" })
+            { return Conflict("La operación no es compatible con los registros relacionados."); }
         });
     }
 
@@ -115,7 +128,7 @@ public static class CatalogEndpoints
         if (row is null) { row = new FinancialAccount { UserId = owner, Name = name, NormalizedName = CatalogRules.Normalize(name), Kind = input.Kind!, CreatedAt = clock.GetUtcNow() }; db.Accounts.Add(row); }
         row.Name = name; row.NormalizedName = CatalogRules.Normalize(name); row.Kind = input.Kind!; row.BankId = input.BankId;
         row.OpeningBalance = input.OpeningBalance; row.OpeningDate = input.OpeningDate; row.IsActive = input.IsActive; row.UpdatedAt = clock.GetUtcNow(); row.Version = Guid.NewGuid();
-        await db.SaveChangesAsync(ct); return id is null ? Results.Created($"/api/finance/accounts/{row.Id}", AccountView(row)) : Results.Ok(AccountView(row));
+        await db.SaveChangesAsync(ct); return id is null ? Results.Created($"/api/finance/accounts/{row.Id}", AccountView(row, row.OpeningBalance)) : Results.Ok(AccountView(row, await TransactionEndpoints.Balance(db, row, ct)));
     }
 
     private static async Task<IResult> SaveCategory(Guid? id, CategoryInput input, HttpContext http, AlineaDbContext db, TimeProvider clock, CancellationToken ct)
@@ -126,6 +139,8 @@ public static class CatalogEndpoints
         if (row is not null && input.Version != row.Version) return Conflict("La categoría cambió. Actualiza la lista.");
         var name = CatalogRules.Name(input.Name);
         if (name is null || input.Kind is not ("income" or "expense")) return Invalid();
+        if (row is not null && row.Kind != input.Kind && row.UsedByTransactions)
+            return Conflict("Una categoría utilizada no puede cambiar de tipo.");
         if (row is null) { row = new Category { UserId = owner, Name = name, NormalizedName = CatalogRules.Normalize(name), Kind = input.Kind!, CreatedAt = clock.GetUtcNow() }; db.Categories.Add(row); }
         row.Name = name; row.NormalizedName = CatalogRules.Normalize(name); row.Kind = input.Kind!; row.IsActive = input.IsActive; row.Version = Guid.NewGuid(); row.UpdatedAt = clock.GetUtcNow();
         await db.SaveChangesAsync(ct); return id is null ? Results.Created($"/api/finance/categories/{row.Id}", CategoryView(row)) : Results.Ok(CategoryView(row));

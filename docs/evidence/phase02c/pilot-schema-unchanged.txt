@@ -1,0 +1,10 @@
+ applied_migrations 
+--------------------
+                  2
+(1 row)
+
+ has_banks | has_transactions 
+-----------+------------------
+ f         | f
+(1 row)
+

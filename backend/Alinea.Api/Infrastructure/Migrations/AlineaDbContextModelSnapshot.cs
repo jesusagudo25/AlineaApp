@@ -347,6 +347,9 @@ namespace Alinea.Api.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("UsedByTransactions")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -440,6 +443,139 @@ namespace Alinea.Api.Infrastructure.Migrations
 
                             t.HasCheckConstraint("CK_ACCOUNTS_KindBank", "(\"Kind\" = 'bank' AND \"BankId\" IS NOT NULL) OR (\"Kind\" = 'cash' AND \"BankId\" IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.FinancialRequest", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Response")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "RequestId");
+
+                    b.ToTable("FINANCIAL_REQUESTS", (string)null);
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.FinancialTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("DestinationAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsVoided")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId", "UserId");
+
+                    b.HasIndex("CategoryId", "UserId");
+
+                    b.HasIndex("DestinationAccountId", "UserId");
+
+                    b.HasIndex("UserId", "Date", "Id");
+
+                    b.ToTable("TRANSACTIONS", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_TRANSACTIONS_Amount", "\"Amount\" > 0");
+
+                            t.HasCheckConstraint("CK_TRANSACTIONS_Shape", "(\"Kind\" IN ('income','expense') AND \"CategoryId\" IS NOT NULL AND \"DestinationAccountId\" IS NULL) OR (\"Kind\" = 'transfer' AND \"CategoryId\" IS NULL AND \"DestinationAccountId\" IS NOT NULL AND \"AccountId\" <> \"DestinationAccountId\")");
+                        });
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.TransactionRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Number").HasColumnType("integer");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Snapshot")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransactionId", "UserId");
+
+                    b.HasIndex("TransactionId", "Number").IsUnique();
+
+                    b.ToTable("TRANSACTION_REVISIONS", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -618,6 +754,47 @@ namespace Alinea.Api.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Bank");
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.FinancialRequest", b =>
+                {
+                    b.HasOne("Alinea.Api.Features.Auth.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.FinancialTransaction", b =>
+                {
+                    b.HasOne("Alinea.Api.Features.Finance.FinancialAccount", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Alinea.Api.Features.Finance.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Alinea.Api.Features.Finance.FinancialAccount", null)
+                        .WithMany()
+                        .HasForeignKey("DestinationAccountId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Alinea.Api.Features.Finance.TransactionRevision", b =>
+                {
+                    b.HasOne("Alinea.Api.Features.Finance.FinancialTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("TransactionId", "UserId")
+                        .HasPrincipalKey("Id", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

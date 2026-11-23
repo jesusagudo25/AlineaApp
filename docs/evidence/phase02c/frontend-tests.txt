@@ -1,0 +1,17 @@
+npm.cmd : npm notice run alinea-frontend@0.0.0 test
+At line:2 char:117
++ ... EXITCODE }; npm.cmd test -- src/features/finance/TransactionsApp.test ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run ...tend@0.0.0 test:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run vitest run src/features/finance/TransactionsApp.test.tsx src/features/finance/CatalogApp.test.tsx
+
+ RUN  v5.1.0 D:/ActiveDirectory/Projects/AlineaApp/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  10 passed (10)
+   Start at  17:54:41
+   Duration  5.12s (environment 71%, setup 14%, tests 10%, transform 4%, import 1%, worker 1%)
+

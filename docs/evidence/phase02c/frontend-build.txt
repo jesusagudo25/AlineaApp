@@ -1,0 +1,20 @@
+npm.cmd : npm notice run alinea-frontend@0.0.0 build
+At line:2 char:1
++ npm.cmd run build *> ../docs/evidence/phase02c/frontend-build.log; if ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm notice run ...end@0.0.0 build:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run npm run typecheck && vite build
+npm notice run alinea-frontend@0.0.0 typecheck
+npm notice run tsc --noEmit
+vite v8.3.7 building client environment for production...
+transforming...
+✓ 28 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.54 kB │ gzip:  0.33 kB
+dist/assets/index-XnD5QIbT.css   17.48 kB │ gzip:  4.23 kB
+dist/assets/index-DwWuLzIc.js   264.68 kB │ gzip: 80.08 kB
+
+✓ built in 454ms

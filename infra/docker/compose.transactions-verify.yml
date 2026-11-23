@@ -1,0 +1,21 @@
+# Proyecto alinea-transactions-verify exclusivamente; sin volumen del piloto.
+services:
+  postgres:
+    volumes: !reset []
+    tmpfs: [/var/lib/postgresql]
+    restart: 'no'
+  api:
+    image: alinea-transactions-verify-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+      Auth__AllowInsecureLocalHttp: 'true'
+      Sms__Provider: DevelopmentMailbox
+      Sms__Brevo__SendingEnabled: 'false'
+      Sms__Brevo__ApiKey: ''
+    volumes: !reset []
+    tmpfs: ['/app/keys:uid=1654,gid=1654,mode=0700']
+    restart: 'no'
+  frontend:
+    image: alinea-transactions-verify-frontend
+    ports: !override ['127.0.0.1:8083:8080']
+    restart: 'no'

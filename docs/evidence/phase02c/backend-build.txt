@@ -1,0 +1,57 @@
+docker :  Image alinea-local-backend-tests Building 
+At line:2 char:57
++ ... og -Tail 8; docker compose --profile tests build backend-tests *> doc ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Image alinea-l...tests Building :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+#1 [internal] load local bake definitions
+#1 reading from stdin 615B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from api.Dockerfile
+#2 transferring dockerfile: 1.00kB 0.0s done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3db8bf01cdc5981f6ee35fbdf3ff4fb
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 236B done
+#4 DONE 0.0s
+
+#5 [source 1/5] FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3db8bf01cdc5981f6ee35fbdf3ff4fb
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 16.70kB 0.0s done
+#6 DONE 0.0s
+
+#7 [source 2/5] WORKDIR /src
+#7 CACHED
+
+#8 [source 3/5] COPY global.json ./
+#8 CACHED
+
+#9 [source 4/5] COPY backend/ backend/
+#9 DONE 0.1s
+
+#10 [source 5/5] COPY tests/ tests/
+#10 DONE 0.1s
+
+#11 [tests 1/1] RUN dotnet restore tests/Alinea.Api.Tests/Alinea.Api.Tests.csproj --locked-mode
+#11 1.704   Determining projects to restore...
+#11 13.86   Restored /src/tests/Alinea.Api.Tests/Alinea.Api.Tests.csproj (in 11.33 sec).
+#11 13.86   Restored /src/backend/Alinea.Api/Alinea.Api.csproj (in 11.33 sec).
+#11 DONE 14.4s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 2.6s done
+#12 writing image sha256:009389c100c3dd4c748683fc2d407a13149464c192b9366f4e16dc2f8a89d48c done
+#12 naming to docker.io/library/alinea-local-backend-tests 0.0s done
+#12 DONE 2.7s
+
+#13 resolving provenance for metadata file
+#13 DONE 0.1s
+ Image alinea-local-backend-tests Built 
